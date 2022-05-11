@@ -1,5 +1,5 @@
 pipeline {
-    agent { label 'main' }
+    agent { label 'master' }
     environment {
       imagename_dev = "ghcr.io/pilotdataplatform/bff-web"
       imagename_staging = "ghcr.io/pilotdataplatform/bff-web"
