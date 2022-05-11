@@ -1,0 +1,33 @@
+name: Run Tests
+
+on:
+  push:
+    branches: [ develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  run_tests:
+    name: Run Tests
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Init Python 3.9
+        uses: actions/setup-python@v2
+        with:
+          python-version: 3.9
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Cache Poetry virtualenv
+        uses: actions/cache@v1
+        id: cache
+        with:
+          path: ~/.virtualenvs
+          key: poetry-${{ hashFiles('**/poetry.lock') }}
+          restore-keys: |
+            poetry-${{ hashFiles('**/poetry.lock') }}
+      - name: Install dependencies
+        run: poetry install
+      - name: Run tests
+        run: CONFIG_CENTER_ENABLED=False poetry run python -m pytest tests/
