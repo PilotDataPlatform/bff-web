@@ -39,7 +39,10 @@ class FileDetailBulkV2(Resource):
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_error_msg("Permission Denied")
                 return api_response.to_dict, api_response.code
-        return response.json(), response.status_code
+        result = response.json()
+        for entity in result["result"]:
+            entity["zone"] = "greenroom" if entity["zone"] == 0 else "core"
+        return result, response.status_code
 
 
 class FileMetaV2(Resource):
@@ -117,7 +120,10 @@ class FileMetaV2(Resource):
         if response.status_code != 200:
             error_msg = f'Error calling Meta service get_node_by_id: {response.json()}'
             raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
-        return response.json(), response.status_code
+        result = response.json()
+        for entity in result["result"]:
+            entity["zone"] = "greenroom" if entity["zone"] == 0 else "core"
+        return result, response.status_code
 
 
 class FileDetailBulk(Resource):
