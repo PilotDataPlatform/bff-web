@@ -66,7 +66,7 @@ class FileMetaV2(Resource):
         owner = request.args.get('owner', '')
         archived = request.args.get('archived', False)
 
-        if source_type not in ["trash", "project", "folder"]:
+        if source_type not in ["trash", "project", "folder", "collection"]:
             _logger.error('Invalid zone')
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_error_msg('Invalid zone')
@@ -97,8 +97,17 @@ class FileMetaV2(Resource):
 
         if source_type == "folder":
             payload["parent_path"] = parent_path
-        elif source_type in ["trash", "project"]:
+        elif source_type == "trash":
             payload["parent_path"] = current_identity["username"]
+        elif source_type == "project":
+            payload["parent_path"] = None
+        elif source_type == "collection":
+            collection_id = request.get_json().get("parent_id")
+            if not collection_id:
+                api_response.set_code(EAPIResponseCode.bad_request)
+                api_response.set_error_msg('parent_id required for collection')
+                return api_response.to_dict, api_response.code
+            payload["id"] = request.get_json()
 
         if project_role in ["contributor", "collaborator"]:
             if not (project_role == "collaborator" and zone == "core"):
@@ -116,7 +125,11 @@ class FileMetaV2(Resource):
             api_response.set_error_msg("Permission Denied")
             return api_response.to_dict, api_response.code
 
-        response = requests.get(ConfigClass.METADATA_SERVICE + 'items/search', params=payload)
+        if source_type == 'collection':
+            url = ConfigClass.METADATA_SERVICE + 'collection/items'
+        else:
+            url = ConfigClass.METADATA_SERVICE + 'items/search'
+        response = requests.get(url, params=payload)
         if response.status_code != 200:
             error_msg = f'Error calling Meta service get_node_by_id: {response.json()}'
             raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
