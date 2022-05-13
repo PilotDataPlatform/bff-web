@@ -16,22 +16,21 @@ api_ns_report = module_api.namespace('CopyRequest', description='CopyRequest API
 
 class APICopyRequest(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_report.add_resource(self.CopyRequest, '/copy/<project_geid>')
-        api_ns_report.add_resource(self.CopyRequestFiles, '/copy/<project_geid>/files')
-        api_ns_report.add_resource(self.CopyRequestPending, '/copy/<project_geid>/pending-files')
+        api_ns_report.add_resource(self.CopyRequest, '/copy/<project_code>')
+        api_ns_report.add_resource(self.CopyRequestFiles, '/copy/<project_code>/files')
+        api_ns_report.add_resource(self.CopyRequestPending, '/copy/<project_code>/pending-files')
 
     class CopyRequest(Resource):
         @jwt_required()
         @permissions_check("copyrequest", "*", "view")
-        def get(self, project_geid):
+        def get(self, project_code):
             api_response = APIResponse()
             data = request.args.copy()
-            code = get_project_code_from_request({"project_geid": project_geid})
-            if get_project_role(code) == "collaborator":
+            if get_project_role(project_code) == "collaborator":
                 data["submitted_by"] = current_identity["username"]
 
             try:
-                response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}", params=data)
+                response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", params=data)
             except Exception as e:
                 api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
                 return api_response.to_dict, api_response.code
@@ -39,7 +38,7 @@ class APICopyRequest(metaclass=MetaAPI):
 
         @jwt_required()
         @permissions_check("copyrequest", "*", "create")
-        def post(self, project_geid):
+        def post(self, project_code):
             api_response = APIResponse()
             data = request.get_json()
 
@@ -50,7 +49,7 @@ class APICopyRequest(metaclass=MetaAPI):
                 return api_response.to_dict, api_response.code
 
             neo4j_client = Neo4jClient()
-            response = neo4j_client.get_container_by_geid(project_geid)
+            response = neo4j_client.get_container_by_geid(project_code)
             if not response.get("result"):
                 error_msg = response.get("error_msg", "Neo4j error")
                 _logger.error(f'Error fetching project from neo4j: {error_msg}')
@@ -62,7 +61,7 @@ class APICopyRequest(metaclass=MetaAPI):
             data["submitted_by"] = current_identity["username"]
             data["project_code"] = project_node["code"]
             try:
-                response = requests.post(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}", json=data)
+                response = requests.post(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", json=data)
             except Exception as e:
                 api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
                 return api_response.to_dict, api_response.code
@@ -70,14 +69,14 @@ class APICopyRequest(metaclass=MetaAPI):
 
         @jwt_required()
         @permissions_check("copyrequest", "*", "update")
-        def put(self, project_geid):
+        def put(self, project_code):
             api_response = APIResponse()
             data = request.get_json()
             put_data = data.copy()
             put_data["username"] = current_identity["username"]
 
             try:
-                response = requests.put(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}", json=put_data)
+                response = requests.put(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", json=put_data)
             except Exception as e:
                 api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
                 return api_response.to_dict, api_response.code
@@ -86,12 +85,12 @@ class APICopyRequest(metaclass=MetaAPI):
     class CopyRequestFiles(Resource):
         @jwt_required()
         @permissions_check("copyrequest", "*", "view")
-        def get(self, project_geid):
+        def get(self, project_code):
             api_response = APIResponse()
             data = request.args.copy()
 
             try:
-                response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}/files", params=data)
+                response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files", params=data)
             except Exception as e:
                 api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
                 return api_response.to_dict, api_response.code
@@ -99,7 +98,7 @@ class APICopyRequest(metaclass=MetaAPI):
 
         @jwt_required()
         @permissions_check("copyrequest", "*", "update")
-        def put(self, project_geid):
+        def put(self, project_code):
             api_response = APIResponse()
             data = request.get_json()
             post_data = data.copy()
@@ -107,7 +106,7 @@ class APICopyRequest(metaclass=MetaAPI):
 
             try:
                 response = requests.put(
-                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}/files",
+                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files",
                     json=post_data,
                     headers=request.headers
                 )
@@ -118,7 +117,7 @@ class APICopyRequest(metaclass=MetaAPI):
 
         @jwt_required()
         @permissions_check("copyrequest", "*", "update")
-        def patch(self, project_geid):
+        def patch(self, project_code):
             api_response = APIResponse()
             data = request.get_json()
             post_data = data.copy()
@@ -126,7 +125,7 @@ class APICopyRequest(metaclass=MetaAPI):
 
             try:
                 response = requests.patch(
-                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}/files",
+                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files",
                     json=post_data,
                     headers=request.headers
                 )
@@ -137,12 +136,12 @@ class APICopyRequest(metaclass=MetaAPI):
 
     class CopyRequestPending(Resource):
         @jwt_required()
-        @permissions_check("copyrequest", "*", "update") # API is only used when admin is updating 
-        def get(self, project_geid):
+        @permissions_check("copyrequest", "*", "update") # API is only used when admin is updating
+        def get(self, project_code):
             api_response = APIResponse()
             try:
                 response = requests.get(
-                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_geid}/pending-files",
+                    ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/pending-files",
                     params=request.args,
                 )
             except Exception as e:
