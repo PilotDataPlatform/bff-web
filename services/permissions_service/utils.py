@@ -90,6 +90,8 @@ def get_project_code_from_request(kwargs):
             return False
         project = result.get("result")
         return project["code"]
+    if "project_code" in kwargs:
+        return kwargs["project_code"]
     if "project_geid" in kwargs:
         client = Neo4jClient()
         result = client.get_container_by_geid(kwargs["project_geid"])
