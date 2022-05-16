@@ -53,9 +53,9 @@ class APICopyRequest(metaclass=MetaAPI):
             if not response.get("result"):
                 error_msg = response.get("error_msg", "Neo4j error")
                 _logger.error(f'Error fetching project from neo4j: {error_msg}')
-                _res.set_code(response.get("code"))
-                _res.set_error_msg(error_msg)
-                return _res.to_dict, _res.code
+                api_response.set_code(response.get("code"))
+                api_response.set_error_msg(error_msg)
+                return api_response.to_dict, api_response.code
             project_node = response.get("result")
 
             data["submitted_by"] = current_identity["username"]
