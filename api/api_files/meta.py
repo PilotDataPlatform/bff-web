@@ -64,7 +64,7 @@ class FileMetaV2(Resource):
 
         name = request.args.get('name', '')
         owner = request.args.get('owner', '')
-        archived = request.args.get('archived', False)
+        archived = request.args.get('archived', False, type=lambda v: v.lower() == 'true')
 
         if source_type not in ["trash", "project", "folder", "collection"]:
             _logger.error('Invalid zone')
