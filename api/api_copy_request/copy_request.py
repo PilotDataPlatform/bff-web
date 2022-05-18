@@ -48,18 +48,8 @@ class APICopyRequest(metaclass=MetaAPI):
                 api_response.set_error_msg("Permission denied")
                 return api_response.to_dict, api_response.code
 
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.get_container_by_geid(project_code)
-            if not response.get("result"):
-                error_msg = response.get("error_msg", "Neo4j error")
-                _logger.error(f'Error fetching project from neo4j: {error_msg}')
-                api_response.set_code(response.get("code"))
-                api_response.set_error_msg(error_msg)
-                return api_response.to_dict, api_response.code
-            project_node = response.get("result")
-
             data["submitted_by"] = current_identity["username"]
-            data["project_code"] = project_node["code"]
+            data["project_code"] = project_code
             try:
                 response = requests.post(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", json=data)
             except Exception as e:
