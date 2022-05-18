@@ -102,12 +102,12 @@ class FileMetaV2(Resource):
         elif source_type == "project":
             payload["parent_path"] = None
         elif source_type == "collection":
-            collection_id = request.get_json().get("parent_id")
+            collection_id = request.args.get("parent_id")
             if not collection_id:
                 api_response.set_code(EAPIResponseCode.bad_request)
                 api_response.set_error_msg('parent_id required for collection')
                 return api_response.to_dict, api_response.code
-            payload["id"] = request.get_json()
+            payload["id"] = collection_id
 
         if project_role in ["contributor", "collaborator"]:
             if not (project_role == "collaborator" and zone == "core"):
