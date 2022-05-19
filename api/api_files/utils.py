@@ -29,5 +29,5 @@ def get_collection_by_id(collection_geid):
     if res:
         return res
     else:
-        raise APIException(status_code=EAPIResponseCode.not_found,
+        raise APIException(status_code=EAPIResponseCode.not_found.value,
                            error_msg=f'Collection {collection_geid} does not exist')
