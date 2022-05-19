@@ -1,8 +1,7 @@
 from flask_jwt import current_identity
 from flask import request
 import requests
-from common import LoggerFactory
-from services.neo4j_service.neo4j_client import Neo4jClient
+from common import LoggerFactory, ProjectClientSync
 from config import ConfigClass
 
 _logger = LoggerFactory('permissions').get_logger()
@@ -14,12 +13,12 @@ def has_permission(project_code, resource, zone, operation):
     else:
         if not project_code:
             _logger.info(
-                f"No project code and not a platform admin, permission denied")
+                "No project code and not a platform admin, permission denied")
             return False
         role = get_project_role(project_code)
         if not role:
             _logger.info(
-                f"Unable to get project role in permissions check, user might not belong to project")
+                "Unable to get project role in permissions check, user might not belong to project")
             return False
 
     try:
@@ -68,47 +67,14 @@ def get_project_code_from_request(kwargs):
     else:
         data = request.args
 
+    project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
     if "project_code" in data:
         return data["project_code"]
     if "project_geid" in data:
-        client = Neo4jClient()
-        result = client.get_container_by_geid(data["project_geid"])
-        if result.get("code") != 200:
-            error_msg = result.get("error_msg")
-            _logger.error(
-                f"Couldn't get project in permissions check - {error_msg}")
-            return False
-        project = result.get("result")
-        return project["code"]
-    if "container_id" in data:
-        client = Neo4jClient()
-        result = client.node_get("Container", data["container_id"])
-        if result.get("code") != 200:
-            error_msg = result.get("error_msg")
-            _logger.error(
-                f"Couldn't get project in permissions check - {error_msg}")
-            return False
-        project = result.get("result")
-        return project["code"]
+        project = project_client.get(id=data["project_geid"])
+        return project.code
     if "project_code" in kwargs:
         return kwargs["project_code"]
     if "project_geid" in kwargs:
-        client = Neo4jClient()
-        result = client.get_container_by_geid(kwargs["project_geid"])
-        if result.get("code") != 200:
-            error_msg = result.get("error_msg")
-            _logger.error(
-                f"Couldn't get project in permissions check - {error_msg}")
-            return False
-        project = result.get("result")
-        return project["code"]
-    if "dataset_id" in kwargs:
-        client = Neo4jClient()
-        result = client.node_get("Container", kwargs["dataset_id"])
-        if result.get("code") != 200:
-            error_msg = result.get("error_msg")
-            _logger.error(
-                f"Couldn't get project in permissions check - {error_msg}")
-            return False
-        project = result.get("result")
-        return project["code"]
+        project = project_client.get(id=kwargs["project_geid"])
+        return project.code

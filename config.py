@@ -4,10 +4,8 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-import requests
 from pydantic import BaseSettings
 from pydantic import Extra
-from requests.models import HTTPError
 from common import VaultClient
 from dotenv import load_dotenv
 
@@ -78,6 +76,11 @@ class Settings(BaseSettings):
     DOWNLOAD_SERVICE_GR: str
     APPROVAL_SERVICE: str
     METADATA_SERVICE: str
+    PROJECT_SERVICE: str
+
+    REDIS_HOST: str
+    REDIS_PORT: str
+    REDIS_PASSWORD: str
 
     # KONG API Gateway
     KONG_BASE: str
@@ -170,6 +173,8 @@ class Settings(BaseSettings):
 
         settings.OPS_DB_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
         settings.SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
+
+        settings.REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
         return settings
 
     class Config:

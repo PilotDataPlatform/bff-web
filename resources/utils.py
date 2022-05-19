@@ -20,12 +20,8 @@ def check_invite_permissions(dataset_node, current_identity):
     return True
 
 
-def remove_user_from_project_group(container_id, user_email, logger, access_token):
+def remove_user_from_project_group(project_code, user_email, logger):
     # Remove user from keycloak group with the same name as the project
-    res = requests.get(
-        url=ConfigClass.NEO4J_SERVICE + f"nodes/Container/node/{container_id}",
-    )
-    project_code = json.loads(res.content)[0]["code"]
     payload = {
         "operation_type": "remove",
         "user_email": user_email,
@@ -34,9 +30,6 @@ def remove_user_from_project_group(container_id, user_email, logger, access_toke
     res = requests.put(
         url=ConfigClass.AUTH_SERVICE + "user/ad-group",
         json=payload,
-        headers={
-            "Authorization": access_token
-        }
     )
     if(res.status_code != 200):
         logger.error(
@@ -55,7 +48,7 @@ def add_user_to_ad_group(user_email, project_code, logger):
     )
     if(res.status_code != 200):
         logger.error(f"Error adding user to group in ad: {res.text} {res.status_code}")
-        
+
     return res.json().get("entry")
 
 

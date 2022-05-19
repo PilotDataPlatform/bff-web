@@ -1,15 +1,14 @@
 from datetime import datetime
 
 import requests
+from common import LoggerFactory, ProjectClient
 from flask import request
-from flask_jwt import current_identity, jwt_required
+from flask_jwt import jwt_required
 from flask_restx import Resource
 
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from resources.swagger_modules import permission_return, users_sample_return
-from services.container_services.container_manager import SrvContainerManager
-from common import LoggerFactory
 from services.permissions_service.decorators import permissions_check
 
 from .namespace import datasets_entity_ns, users_entity_ns
@@ -48,25 +47,21 @@ class Users(Resource):
             return api_response.to_dict, api_response.code
         return response.json(), response.status_code
 
+
 class ContainerAdmins(Resource):
     @datasets_entity_ns.response(200, users_sample_return)
     @jwt_required()
     @permissions_check('project', '*', 'view')
     def get(self, project_geid):
         '''
-        This method allow user to fetch all admins under a specific dataset with permissions.
+        This method allow user to fetch all admins under a specific project with permissions.
         '''
-        # check dataset exists
-        container_mgr = SrvContainerManager()
-        query_params = {"global_entity_id": project_geid}
-        response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=query_params)
-        if not response.json():
-            return {'result': 'Container %s is not available.' % container_id}, 404
-        project_code = response.json()[0]["code"]
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE)
+        project = project_client.get(project_geid)
 
         # fetch admins of the project
         payload = {
-            "role_names": [f"{project_code}-admin"],
+            "role_names": [f"{project.code}-admin"],
             "status": "active",
         }
         response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
@@ -83,11 +78,10 @@ class ContainerUsers(Resource):
         '''
         _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_geid)))
         # check dataset exists
-        container_mgr = SrvContainerManager()
         query_params = {"global_entity_id": project_geid}
         response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=query_params)
         if not response.json():
-            return {'result': 'Container %s is not available.' % container_id}, 404
+            return {'result': f'Container {project_geid} is not available.'}, 404
         project_code = response.json()[0]["code"]
 
         # fetch admins of the project
@@ -187,7 +181,6 @@ class ContainerUsersQuery(Resource):
         data = request.get_json()
 
         # check dataset exists
-        container_mgr = SrvContainerManager()
         query_params = {"global_entity_id": project_geid}
         response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=query_params)
         if not response.json():

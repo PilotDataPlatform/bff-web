@@ -1,5 +1,4 @@
 import importlib
-import json
 
 import jwt as pyjwt
 import requests
@@ -21,7 +20,7 @@ from opentelemetry.sdk.trace.export import BatchSpanProcessor
 from app.flask import Flask
 from config import ConfigClass
 from config import get_settings
-from common import LoggerFactory
+from common import LoggerFactory, ProjectException
 from resources.error_handler import APIException
 
 
@@ -61,6 +60,10 @@ def create_app():
 
     @app.errorhandler(APIException)
     def http_exception_handler(exc: APIException):
+        return exc.content, exc.status_code
+
+    @app.errorhandler(ProjectException)
+    def http_exception_handler(exc: ProjectException):
         return exc.content, exc.status_code
 
     @jwt.jwt_error_handler

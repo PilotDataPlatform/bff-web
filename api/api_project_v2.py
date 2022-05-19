@@ -38,11 +38,6 @@ class APIProjectV2(metaclass=MetaAPI):
         api_ns_projects.add_resource(self.RestfulProjectsv2, '/projects')
 
     class RestfulProjectsv2(Resource):
-        def get(self):
-            # init resp
-            my_res = APIResponse()
-            return my_res.to_dict, my_res.code
-
         @jwt_required()
         @permissions_check('project', '*', 'create')
         def post(self):

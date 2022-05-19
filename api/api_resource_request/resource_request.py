@@ -94,7 +94,7 @@ class APIResourceRequest(metaclass=MetaAPI):
                     api_response.set_result("Resource Request not found")
                     return api_response.to_dict, api_response.code
                 resource_request.active = False
-                resource_request.complete_date = datetime.utcnow() 
+                resource_request.complete_date = datetime.utcnow()
                 db.session.add(resource_request)
                 db.session.commit()
                 db.session.refresh(resource_request)
@@ -104,26 +104,14 @@ class APIResourceRequest(metaclass=MetaAPI):
                 api_response.set_result("Psql Error: " + str(e))
                 return api_response.to_dict, api_response.code
 
-            try:
-                # Get dataset
-                payload = {"global_entity_id": resource_request.project_geid}
-                response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=payload)
-                if not response.json():
-                    api_response.set_code(EAPIResponseCode.forbidden)
-                    api_response.set_result("Container not found in neo4j")
-                    return api_response.to_dict, api_response.code
-                dataset_node = response.json()[0]
-            except Exception as e:
-                _logger.error("Neo4j Error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Neo4j Error: " + str(e))
-                return api_response.to_dict, api_response.code
+            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = project_client.get(id=resource_request.project_geid)
 
             template_kwargs = {
                 "current_user": current_identity["username"],
                 "request_for": resource_request.request_for,
                 "project_name": resource_request.project_name,
-                "project_code": dataset_node["code"],
+                "project_code": project.code,
                 "admin_email": ConfigClass.EMAIL_SUPPORT,
             }
             try:
@@ -218,20 +206,16 @@ class APIResourceRequest(metaclass=MetaAPI):
                 # get user node
                 user_node = get_user_node(data["user_id"])
 
-                # get dataset
-                is_dataset, dataset_res, code = get_dataset(data)
-                if not is_dataset:
-                    return dataset_res, code
-                else:
-                    dataset_node = dataset_res
+                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = project_client.get(id=data["project_geid"])
 
                 model_data["username"] = user_node["username"]
                 model_data["email"] = user_node["email"]
-                model_data["project_name"] = dataset_node["name"]
+                model_data["project_name"] = project.name
 
                 user_role = None
                 for role in get_realm_roles(user_node["username"]):
-                    if role["name"].split("-")[0] == dataset_node["code"]:
+                    if role["name"].split("-")[0] == project.code:
                         user_role = role["name"].split("-")[-1]
                         break
 
@@ -242,7 +226,7 @@ class APIResourceRequest(metaclass=MetaAPI):
                     resource_request = resource_request_res
 
                 # send_email
-                is_email_sent, email_res, code = send_email(resource_request, dataset_node, user_role)
+                is_email_sent, email_res, code = send_email(resource_request, project, user_role)
                 if not is_email_sent:
                     return email_res, code
                 api_response.set_result(resource_request.to_dict())
@@ -319,18 +303,6 @@ def get_realm_roles(username: str) -> list:
     return response.json()["result"]
 
 
-def get_dataset(data):
-    api_response = APIResponse()
-    payload = {"global_entity_id": data["project_geid"]}
-    response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=payload)
-    if not response.json():
-        api_response.set_code(EAPIResponseCode.forbidden)
-        api_response.set_result("Container not found in neo4j")
-        return False, api_response.to_dict, api_response.code
-    dataset_node = response.json()[0]
-    return True, dataset_node, 200
-
-
 def db_resource_request(model_data):
     api_response = APIResponse()
     try:
@@ -346,13 +318,13 @@ def db_resource_request(model_data):
         return False, api_response.to_dict, api_response.code
 
 
-def send_email(resource_request, dataset_node, user_role):
+def send_email(resource_request, project, user_role):
     api_response = APIResponse()
     template_kwargs = {
         "username": resource_request.username,
         "request_for": resource_request.request_for,
         "project_name": resource_request.project_name,
-        "project_code": dataset_node["code"],
+        "project_code": project.code,
         "admin_email": ConfigClass.EMAIL_SUPPORT,
         "portal_url": ConfigClass.SITE_DOMAIN,
         "user_role": user_role.title()

@@ -2,6 +2,7 @@ import datetime
 import json
 
 import requests
+from common import LoggerFactory
 from flask import request
 from flask_jwt import current_identity, jwt_required
 from flask_restx import Resource
@@ -11,7 +12,6 @@ from resources.swagger_modules import (dataset_sample_return,
                                        datasets_sample_return)
 from resources.utils import *
 from resources.utils import check_container_exist
-from common import LoggerFactory
 from services.permissions_service.decorators import permissions_check
 
 from .namespace import datasets_entity_ns
@@ -57,7 +57,7 @@ class Containers(Resource):
                 if "create_time_start" in payload and "create_time_end" in payload:
                     payload["create_time_start"] = datetime.datetime.utcfromtimestamp(int(payload["create_time_start"])).strftime('%Y-%m-%dT%H:%M:%S')
                     payload["create_time_end"] = datetime.datetime.utcfromtimestamp(int(payload["create_time_end"])).strftime('%Y-%m-%dT%H:%M:%S')
-               
+
                 url = ConfigClass.NEO4J_SERVICE + "nodes/Container/query"
                 response = neo4j_query_with_pagination(url, payload, partial=True)
 
