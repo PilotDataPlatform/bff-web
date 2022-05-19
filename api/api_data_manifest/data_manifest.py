@@ -90,7 +90,8 @@ class APIDataManifest(metaclass=MetaAPI):
             try:
                 response = requests.get(
                     ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
-                if not response:
+                res = response.json()['result']
+                if not res:
                     my_res.set_code(EAPIResponseCode.not_found)
                     my_res.set_error_msg('Attribute template not found')
                     return my_res.to_dict, my_res.code
@@ -169,7 +170,6 @@ class APIDataManifest(metaclass=MetaAPI):
             api_response = APIResponse()
 
             entity = get_entity_by_id(file_geid)
-
             if entity["extended"]["extra"].get("attributes"):
                 template_id = list(entity["extended"]["extra"]["attributes"].keys())[0]
             else:
@@ -177,7 +177,6 @@ class APIDataManifest(metaclass=MetaAPI):
                     status_code=EAPIResponseCode.bad_request.value,
                     error_msg="File doesn't have an attached template"
                 )
-
             # Permissions check
             if current_identity["role"] != "admin":
                 if entity['owner'] != current_identity["username"]:
@@ -208,6 +207,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 }
                 response = requests.put(
                     ConfigClass.METADATA_SERVICE + 'item/', params=params, json=payload)
+
                 return response.json(), response.status_code
             except Exception as e:
                 _logger.error(
@@ -250,7 +250,6 @@ class APIDataManifest(metaclass=MetaAPI):
         def get(self):
             api_response = APIResponse()
             template_id = request.args.get("template_id")
-
             if not template_id:
                 api_response.set_code(EAPIResponseCode.bad_request)
                 api_response.set_result(f"Missing required field template_id")
@@ -264,7 +263,7 @@ class APIDataManifest(metaclass=MetaAPI):
                     api_response.set_error_msg('Attribute template not found')
                     return api_response.to_dict, api_response.code
 
-                template = response.json()['result']
+                template = response.json()['result'][0]
                 if not has_permission(template['project_code'], "file_attribute_template", "*", "export"):
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_result("Permission Denied")
@@ -312,15 +311,14 @@ class APIDataManifest(metaclass=MetaAPI):
                             api_response.set_code(EAPIResponseCode.forbidden)
                             api_response.set_result("Permission Denied")
                             return api_response.to_dict, api_response.code
-
                         response = requests.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
-                        if not response:
+                        if response.status_code != 200:
                             api_response.set_code(EAPIResponseCode.not_found)
                             api_response.set_error_msg('Attribute template not found')
                             return api_response.to_dict, api_response.code
                         else:
                             attributes = []
-                            template_name = response.json()['result']['name']
+                            template_name = response.json()['result'][0]['name']
                             attribute = {'template_name': template_name,
                                          'template_id': template_id,
                                          'attributes': entity_attributes[template_id]}
@@ -357,64 +355,67 @@ class APIDataManifest(metaclass=MetaAPI):
             item_ids = data.get('item_ids')
             project_code = data.get('project_code')
             items = []
-            if current_identity['role'] != 'admin':
-                try:
+            try:
+                if current_identity['role'] != 'admin':
                     project_role = get_project_role(project_code)
-                except Exception as e:
-                    _logger.error(f"User do not have access to this project: {str(e)}")
-                    api_response.set_code(EAPIResponseCode.forbidden)
-                    api_response.set_result(f"User do not have access to this project")
-                    return api_response.to_dict, api_response.code
+                    if not project_role:
+                        api_response.set_code(EAPIResponseCode.forbidden)
+                        api_response.set_result(f"User does not have access to this project")
+                        return api_response.to_dict, api_response.code
 
-                for item in item_ids:
-                    entity = get_entity_by_id(item)
-                    root_folder = entity["parent_path"].split(".")[0]
-                    zone = "greenroom" if entity["zone"] == 1 else "core"
-                    if project_role == 'collaborator':
-                        if zone == "greenroom" and root_folder != current_identity['username']:
-                            api_response.set_code(EAPIResponseCode.forbidden)
-                            api_response.set_result(f"Permission denied")
-                            return api_response.to_dict, api_response.code
-                    elif project_role == 'contributor':
-                        if root_folder != current_identity['username']:
-                            api_response.set_code(EAPIResponseCode.forbidden)
-                            api_response.set_result(f"Permission denied")
-                            return api_response.to_dict, api_response.code
-                    items.append(entity)
+                    for item in item_ids:
+                        entity = get_entity_by_id(item)
+                        root_folder = entity["parent_path"].split(".")[0]
+                        zone = "greenroom" if entity["zone"] == 1 else "core"
+                        if project_role == 'collaborator':
+                            if zone == "greenroom" and root_folder != current_identity['username']:
+                                api_response.set_code(EAPIResponseCode.forbidden)
+                                api_response.set_result(f"Permission denied")
+                                return api_response.to_dict, api_response.code
+                        elif project_role == 'contributor':
+                            if root_folder != current_identity['username']:
+                                api_response.set_code(EAPIResponseCode.forbidden)
+                                api_response.set_result(f"Permission denied")
+                                return api_response.to_dict, api_response.code
+                        items.append(entity)
 
-            for item in items:
-                if item['type'] == 'folder':
-                    params = {'id': item['id']}
-                    update = {'attribute_template_id': data['template_id'], 'attributes': data['attributes']}
+                for item in items:
+                    if item['type'] == 'folder':
+                        params = {'id': item['id']}
+                        update = {'attribute_template_id': data['template_id'], 'attributes': data['attributes']}
+                        response = requests.put(
+                            ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', params=params, json=update)
+                        if response.status_code != 200:
+                            _logger.error('Attaching attributes failed: {}'.format(response.text))
+                            api_response.set_code(response.status_code)
+                            api_response.set_result(response.text)
+                            return api_response.to_dict, api_response.code
+                        responses.append(response.json()['result'])
+                    else:
+                        update = {
+                            'parent': item['parent'],
+                            'parent_path': item['parent_path'],
+                            'type': item['type'],
+                            "attribute_template_id": data['template_id'],
+                            "attributes": data['attributes']
+                        }
+                        payload['items'].append(update)
+                        file_ids.append(item['id'])
+                if file_ids:
+                    params = {'ids': file_ids}
                     response = requests.put(
-                        ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', params=params, json=update)
+                        ConfigClass.METADATA_SERVICE + 'items/batch/', params=params, json=payload)
                     if response.status_code != 200:
                         _logger.error('Attaching attributes failed: {}'.format(response.text))
                         api_response.set_code(response.status_code)
                         api_response.set_result(response.text)
                         return api_response.to_dict, api_response.code
                     responses.append(response.json()['result'])
-                else:
-                    update = {
-                        'parent': item['parent'],
-                        'parent_path': item['parent_path'],
-                        'type': item['type'],
-                        "attribute_template_id": data['template_id'],
-                        "attributes": data['attributes']
-                    }
-                    payload['items'].append(update)
-                    file_ids.append(item['id'])
 
-            if file_ids:
-                params = {'ids': file_ids}
-                response = requests.put(
-                    ConfigClass.METADATA_SERVICE + 'items/batch/', params=params, json=payload)
-                if response.status_code != 200:
-                    _logger.error('Attaching attributes failed: {}'.format(response.text))
-                    api_response.set_code(response.status_code)
-                    api_response.set_result(response.text)
-                    return api_response.to_dict, api_response.code
-                responses.append(response.json()['result'])
-
-            api_response.set_result(responses)
-            return api_response.to_dict, api_response.code
+                api_response.set_result(responses)
+                return api_response.to_dict, api_response.code
+            except Exception as e:
+                _logger.error(f"Error when calling metadata service: {str(e)}")
+                api_response.set_code(EAPIResponseCode.forbidden)
+                api_response.set_result(f"Error when calling metadata service: {str(e)}")
+                return api_response.to_dict, api_response.code
