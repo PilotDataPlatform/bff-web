@@ -20,10 +20,10 @@ _logger = LoggerFactory('api_meta').get_logger()
 
 class FileDetailBulkV2(Resource):
     @jwt_required()
-    def get(self):
+    def post(self):
         api_response = APIResponse()
         payload = {
-            "ids": request.args.get("ids", [])
+            "ids": request.get_json().get("ids", [])
         }
         response = requests.get(ConfigClass.METADATA_SERVICE + "items/batch", params=payload)
         if response.status_code != 200:
