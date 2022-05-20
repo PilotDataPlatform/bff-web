@@ -249,7 +249,7 @@ def test_file_detail_bulk_200(test_client, requests_mocker, jwt_token_admin, has
         "ids": [MOCK_FILE_DATA["id"]]
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v2/files/bulk/detail", query_string=payload, headers=headers)
+    response = test_client.post("v2/files/bulk/detail", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -265,5 +265,5 @@ def test_file_detail_bulk_permissions_403(test_client, requests_mocker, jwt_toke
         "ids": [MOCK_FILE_DATA["id"]]
     }
     headers = {"Authorization": jwt_token_contrib}
-    response = test_client.get("v2/files/bulk/detail", query_string=payload, headers=headers)
+    response = test_client.post("v2/files/bulk/detail", json=payload, headers=headers)
     assert response.status_code == 403
