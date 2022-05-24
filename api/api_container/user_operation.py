@@ -1,7 +1,7 @@
 from datetime import datetime
 
 import requests
-from common import LoggerFactory, ProjectClient
+from common import LoggerFactory, ProjectClientSync
 from flask import request
 from flask_jwt import jwt_required
 from flask_restx import Resource
@@ -77,16 +77,12 @@ class ContainerUsers(Resource):
         This method allow user to fetch all users under a specific dataset with permissions.
         '''
         _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_geid)))
-        # check dataset exists
-        query_params = {"global_entity_id": project_geid}
-        response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=query_params)
-        if not response.json():
-            return {'result': f'Container {project_geid} is not available.'}, 404
-        project_code = response.json()[0]["code"]
+        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = project_client.get(id=project_geid)
 
         # fetch admins of the project
         payload = {
-            "role_names": [f"{project_code}-" + i for i in ["admin", "contributor", "collaborator"]],
+            "role_names": [f"{project.code}-" + i for i in ["admin", "contributor", "collaborator"]],
             "status": "active",
         }
         response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
@@ -94,7 +90,6 @@ class ContainerUsers(Resource):
 
 
 class UserContainerQuery(Resource):
-
     @users_entity_ns.response(200, permission_return)
     @jwt_required()
     def post(self, username):
@@ -109,10 +104,9 @@ class UserContainerQuery(Resource):
             "page_size": data.get("page_size", 25),
             "order_by": data.get("order_by", None),
             "order_type": data.get("order_type", None),
-            "partial": True,
-            "query": {
-                **data.get("query", {})
-            }
+            "name": data.get("name"),
+            "code": data.get("code"),
+            "tags": data.get("tags"),
         }
 
         query = {
@@ -133,44 +127,38 @@ class UserContainerQuery(Resource):
         if data.get("is_all"):
             # This is terrible but it is required by frontend and will take to long for them to fix right now
             payload["page_size"] = 999
-        payload["query"]["labels"] = ["Container"]
-        if "create_time_start" in payload["query"] and "create_time_end" in payload["query"]:
+
+        if "create_time_start" in data and "create_time_end" in data:
             start_time = datetime.utcfromtimestamp(int(payload["query"]["create_time_start"]))
             end_time = datetime.utcfromtimestamp(int(payload["query"]["create_time_end"]))
-            payload["query"]["create_time_start"] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
-            payload["query"]["create_time_end"] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+            payload["create_time_start"] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+            payload["create_time_end"] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
 
         if user_node["role"] != "admin":
             roles = realm_roles
+            project_codes = ",".join(list(set(i.split("-")[0] for i in roles)))
+            payload["codes-any"] = project_codes
 
-            project_codes = list(set(i.split("-")[0] for i in roles))
-            payload["query"]["code__in"] = project_codes
-
-            if payload["query"].get("code") and payload["query"].get("code__in"):
-                for code in project_codes.copy():
-                    if not payload["query"]["code"] in code:
-                        payload["query"]["code__in"].remove(code)
-                del payload["query"]["code"]
-
-        response = requests.post(ConfigClass.NEO4J_SERVICE_V2 + "nodes/query", json=payload)
-        result = response.json()
+        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project_result = project_client.search(**payload)
+        results = [i.json() for i in project_result["result"]]
 
         if user_node["role"] != "admin":
-            for project in result["result"]:
+            for project in results:
                 for role in realm_roles:
                     try:
                         role_project_code = role.split("-")[0]
                         project_role = role.split("-")[1]
-                        if role_project_code  == project["code"]:
+                        if role_project_code == project["code"]:
                             project["permission"] = project_role
                             break
                     except Exception as e:
                         continue
         else:
-            for project in result["result"]:
+            for project in results:
                 project["permission"] = "admin"
-        result["role"] = user_node["role"]
-        return result, response.status_code
+        results["role"] = user_node["role"]
+        return results, response.status_code
 
 
 class ContainerUsersQuery(Resource):
@@ -180,16 +168,12 @@ class ContainerUsersQuery(Resource):
         _logger.info('Call API for fetching all users in a dataset')
         data = request.get_json()
 
-        # check dataset exists
-        query_params = {"global_entity_id": project_geid}
-        response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json=query_params)
-        if not response.json():
-            return {'result': 'Container %s is not available.'%project_geid}, 404
-        project_code = response.json()[0]["code"]
+        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = project_client.get(id=project_geid)
 
         # fetch admins of the project
         payload = {
-            "role_names": [f"{project_code}-" + i for i in ["admin", "contributor", "collaborator"]],
+            "role_names": [f"{project.code}-" + i for i in ["admin", "contributor", "collaborator"]],
             "status": "active",
             "username": data.get("username"),
             "email": data.get("email"),

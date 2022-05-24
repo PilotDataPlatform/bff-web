@@ -7,7 +7,6 @@ from flask_restx import Resource
 from config import ConfigClass
 from resources.error_handler import APIException
 from resources.swagger_modules import new_user_module, user_sample_return
-from services.neo4j_service.neo4j_client import Neo4jClient
 
 from .namespace import users_entity_ns
 
@@ -18,7 +17,6 @@ class ADUserUpdate(Resource):
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.neo4j_client = Neo4jClient()
 
     @users_entity_ns.expect(new_user_module)
     @users_entity_ns.response(200, user_sample_return)

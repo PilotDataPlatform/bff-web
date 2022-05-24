@@ -1,4 +1,4 @@
-from flask_restx import Api, Resource, fields
+from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from models.api_meta_class import MetaAPI
 from flask import request
@@ -7,8 +7,7 @@ from models.api_response import APIResponse, EAPIResponseCode
 from api import module_api
 from config import ConfigClass
 from services.permissions_service.decorators import permissions_check
-from services.permissions_service.utils import get_project_role, get_project_code_from_request
-from services.neo4j_service.neo4j_client import Neo4jClient
+from services.permissions_service.utils import get_project_role
 import requests
 
 api_ns_report = module_api.namespace('CopyRequest', description='CopyRequest API', path='/v1/request')
