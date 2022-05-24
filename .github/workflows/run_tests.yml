@@ -18,7 +18,7 @@ jobs:
         with:
           python-version: 3.9
       - name: Install ldap
-        run: sudo apt install libldap2-dev libsasl2-dev slapd ldap-utils
+        run: sudo apt update && sudo apt install libldap2-dev libsasl2-dev slapd ldap-utils
       - name: Install Poetry
         uses: snok/install-poetry@v1
       - name: Cache Poetry virtualenv
