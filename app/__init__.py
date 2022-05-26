@@ -63,7 +63,7 @@ def create_app():
         return exc.content, exc.status_code
 
     @app.errorhandler(ProjectException)
-    def http_exception_handler(exc: ProjectException):
+    def project_exception_handler(exc: ProjectException):
         return exc.content, exc.status_code
 
     @jwt.jwt_error_handler

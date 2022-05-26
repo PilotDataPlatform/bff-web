@@ -18,7 +18,7 @@ class FolderCreation(Resource):
 
     @jwt_required()
     @permissions_check('file', '*', 'upload')
-    def post(self, project_geid):
+    def post(self, project_id):
         api_response = APIResponse()
         data = request.get_json()
         folder_name = data.get("folder_name")

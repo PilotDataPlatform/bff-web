@@ -5,7 +5,6 @@ from flask import request
 from flask_restx import Resource
 
 from config import ConfigClass
-from resources.error_handler import APIException
 from resources.swagger_modules import new_user_module, user_sample_return
 
 from .namespace import users_entity_ns

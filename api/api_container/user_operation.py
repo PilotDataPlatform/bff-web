@@ -52,12 +52,12 @@ class ContainerAdmins(Resource):
     @datasets_entity_ns.response(200, users_sample_return)
     @jwt_required()
     @permissions_check('project', '*', 'view')
-    def get(self, project_geid):
+    def get(self, project_id):
         '''
         This method allow user to fetch all admins under a specific project with permissions.
         '''
-        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE)
-        project = project_client.get(project_geid)
+        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = project_client.get(project_id)
 
         # fetch admins of the project
         payload = {
@@ -72,18 +72,25 @@ class ContainerUsers(Resource):
     @datasets_entity_ns.response(200, users_sample_return)
     @jwt_required()
     @permissions_check('users', '*', 'view')
-    def get(self, project_geid):
+    def get(self, project_id):
         '''
         This method allow user to fetch all users under a specific dataset with permissions.
         '''
-        _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_geid)))
+        data = request.args
+        _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_id)))
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_geid)
+        project = project_client.get(id=project_id)
 
         # fetch admins of the project
         payload = {
             "role_names": [f"{project.code}-" + i for i in ["admin", "contributor", "collaborator"]],
             "status": "active",
+            "username": data.get("username"),
+            "email": data.get("email"),
+            "page": data.get("page", 0),
+            "page_size": data.get("page_size", 25),
+            "order_by": data.get("order_by", "time_created"),
+            "order_type": data.get("order_type", "desc"),
         }
         response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
         return response.json(), response.status_code
@@ -99,14 +106,26 @@ class UserContainerQuery(Resource):
         _logger.info('Call API for fetching user {} role towards all projects'.format(username))
         data = request.get_json()
 
+        name = None
+        if request.args.get("name"):
+            name = "%" + request.args.get("name") + "%"
+        code = None
+        if request.args.get("code"):
+            code = "%" + request.args.get("code") + "%"
+
+        description = None
+        if request.args.get("description"):
+            code = "%" + request.args.get("description") + "%"
+
         payload = {
             "page": data.get("page", 0),
             "page_size": data.get("page_size", 25),
             "order_by": data.get("order_by", None),
             "order_type": data.get("order_type", None),
-            "name": data.get("name"),
-            "code": data.get("code"),
-            "tags": data.get("tags"),
+            "name": name,
+            "code": code,
+            "tags_all": data.get("tags"),
+            "description": description,
         }
 
         query = {
@@ -141,10 +160,10 @@ class UserContainerQuery(Resource):
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project_result = project_client.search(**payload)
-        results = [i.json() for i in project_result["result"]]
+        projects = [i.json() for i in project_result["result"]]
 
         if user_node["role"] != "admin":
-            for project in results:
+            for project in projects:
                 for role in realm_roles:
                     try:
                         role_project_code = role.split("-")[0]
@@ -152,35 +171,13 @@ class UserContainerQuery(Resource):
                         if role_project_code == project["code"]:
                             project["permission"] = project_role
                             break
-                    except Exception as e:
+                    except Exception:
                         continue
         else:
-            for project in results:
+            for project in projects:
                 project["permission"] = "admin"
-        results["role"] = user_node["role"]
-        return results, response.status_code
-
-
-class ContainerUsersQuery(Resource):
-    @jwt_required()
-    @permissions_check('users', '*', 'view')
-    def post(self, project_geid):
-        _logger.info('Call API for fetching all users in a dataset')
-        data = request.get_json()
-
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_geid)
-
-        # fetch admins of the project
-        payload = {
-            "role_names": [f"{project.code}-" + i for i in ["admin", "contributor", "collaborator"]],
-            "status": "active",
-            "username": data.get("username"),
-            "email": data.get("email"),
-            "page": data.get("page", 0),
-            "page_size": data.get("page_size", 25),
-            "order_by": data.get("order_by", "time_created"),
-            "order_type": data.get("order_type", "desc"),
+        results = {
+            "results": projects,
+            "role": user_node["role"]
         }
-        response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
-        return response.json(), response.status_code
+        return results, response.status_code

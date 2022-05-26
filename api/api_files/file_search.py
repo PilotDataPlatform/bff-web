@@ -1,7 +1,6 @@
 from flask import request
 from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
-from resources.utils import get_container_id
 from models.api_response import APIResponse, EAPIResponseCode
 from common import LoggerFactory, ProjectClientSync
 from services.permissions_service.utils import get_project_role, get_project_code_from_request

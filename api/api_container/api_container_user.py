@@ -5,12 +5,11 @@ from flask_jwt import current_identity, jwt_required
 from flask_restx import Resource
 
 from config import ConfigClass
-from models.api_response import APIResponse, EAPIResponseCode
+from models.api_response import EAPIResponseCode
 from models.user_type import map_neo4j_to_frontend
 from resources.error_handler import APIException
 from resources.swagger_modules import success_return
-from resources.utils import (add_user_to_ad_group, get_container_id,
-                             remove_user_from_project_group)
+from resources.utils import (add_user_to_ad_group, remove_user_from_project_group)
 from services.notifier_services.email_service import SrvEmail
 from services.permissions_service.decorators import permissions_check
 
@@ -24,11 +23,11 @@ class ContainerUser(Resource):
 
     @jwt_required()
     @permissions_check('invite', '*', 'create')
-    def post(self, username, project_geid):
+    def post(self, username, project_id):
         """
         This method allow container admin to add single user to a specific container with permission.
         """
-        logger.info('Call API for adding user {} to project {}'.format(username, str(project_geid)))
+        logger.info('Call API for adding user {} to project {}'.format(username, str(project_id)))
 
         # Check if permission is provided
         role = request.get_json().get("role", None)
@@ -37,7 +36,7 @@ class ContainerUser(Resource):
             return {'result': "User's role is required."},
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_geid)
+        project = project_client.get(id=project_id)
 
         # validate user and relationship
         user = validate_user(username)
@@ -73,12 +72,12 @@ class ContainerUser(Resource):
     @datasets_entity_ns.response(200, success_return)
     @jwt_required()
     @permissions_check('users', '*', 'view')
-    def put(self, username, project_geid):
+    def put(self, username, project_id):
         """
         This method allow user to update user's permission to a specific dataset.
         """
 
-        logger.info(f'Call API for changing user {username} role in project {project_geid}')
+        logger.info(f'Call API for changing user {username} role in project {project_id}')
 
         old_role = request.get_json().get("old_role", None)
         new_role = request.get_json().get("new_role", None)
@@ -87,7 +86,7 @@ class ContainerUser(Resource):
             return res_valid, code
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_geid)
+        project = project_client.get(id=project_id)
 
         # validate user
         user = validate_user(username)
@@ -113,17 +112,17 @@ class ContainerUser(Resource):
     @datasets_entity_ns.response(200, success_return)
     @jwt_required()
     @permissions_check('users', '*', 'view')
-    def delete(self, username, project_geid):
+    def delete(self, username, project_id):
         """
         This method allow user to remove user's permission to a specific container.
         """
-        logger.info(f'Call API for removing user {username} from project {project_geid}')
+        logger.info(f'Call API for removing user {username} from project {project_id}')
 
         user = validate_user(username)
         user_email = user["email"]
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_geid)
+        project = project_client.get(id=project_id)
         response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params={"username": username})
         if response.status_code != 200:
             raise Exception(str(response.__dict__))

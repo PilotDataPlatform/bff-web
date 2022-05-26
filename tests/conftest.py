@@ -7,6 +7,7 @@ from config import ConfigClass
 
 from app import Flask
 from app import create_app
+from testcontainers.redis import RedisContainer
 
 
 @pytest.fixture
@@ -14,10 +15,13 @@ def app():
     app = Flask('flask_test', root_path=os.path.dirname(__file__))
     return app
 
+
 @pytest.fixture(scope='session')
-def test_client():
+def test_client(redis):
+    ConfigClass.REDIS_URL = redis.url
     app = create_app()
     return app.test_client()
+
 
 @pytest.fixture
 def requests_mocker():
@@ -25,13 +29,16 @@ def requests_mocker():
     with requests_mock.Mocker(**kw) as m:
         yield m
 
+
 @pytest.fixture
 def jwt_token_admin(mocker, requests_mocker):
     jwt_mock(mocker, requests_mocker, "admin")
 
+
 @pytest.fixture
 def jwt_token_contrib(mocker, requests_mocker):
     jwt_mock(mocker, requests_mocker, "member", "contributor", "test_project")
+
 
 def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = "", project_code: str = ""):
     if platform_role == "admin":
@@ -81,14 +88,27 @@ def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = ""
 @pytest.fixture
 def has_permission_true(mocker):
     mocker.patch("services.permissions_service.utils.has_permission", return_value=True)
+    mocker.patch("services.permissions_service.decorators.has_permission", return_value=True)
     mocker.patch("api.api_files.meta.has_permission", return_value=True)
+
 
 @pytest.fixture
 def has_permission_false(mocker):
     mocker.patch("services.permissions_service.utils.has_permission", return_value=False)
+    mocker.patch("services.permissions_service.decorators.has_permission", return_value=False)
     mocker.patch("api.api_files.meta.has_permission", return_value=False)
+
 
 @pytest.fixture
 def request_context(app):
     with app.test_request_context() as context:
         yield context
+
+
+@pytest.fixture(scope='session', autouse=True)
+def redis():
+    with RedisContainer("redis:latest") as redis:
+        host = redis.get_container_host_ip()
+        port = redis.get_exposed_port(redis.port_to_expose)
+        redis.url = f"redis://{host}:{port}"
+        yield redis

@@ -6,10 +6,10 @@ from flask_restx import Resource
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from resources.error_handler import APIException
-from resources.utils import http_query_node
-from common import LoggerFactory
+from common import LoggerFactory, ProjectClientSync
 from services.permissions_service.decorators import permissions_check
 from services.permissions_service.utils import get_project_role, has_permission
+from services.meta import get_entity_by_id
 
 _logger = LoggerFactory('api_files_ops_v1').get_logger()
 
@@ -22,7 +22,7 @@ class FileActionTasks(Resource):
     def get(self):
         request_params = {**request.args}
         # here update the project_code to code
-        request_params.update({"code":request_params.get("project_code")})
+        request_params.update({"code": request_params.get("project_code")})
         url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
         response = requests.get(url, params=request_params)
         if response.status_code == 200:
@@ -154,18 +154,9 @@ def validate_request_params(request_body: dict):
 
 
 def get_project_or_error(project_geid: str) -> dict:
-    project_res = http_query_node("Container", {"global_entity_id": project_geid})
-    if project_res.status_code != 200:
-        _logger.error('file validation api: Query node error')
-        error_msg = "Query node error" + str(project_res.text)
-        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.bad_request.value)
-    project_found = project_res.json()
-    if len(project_found) == 0:
-        error_msg = "Invalid project_geid, Project not found: " + project_geid
-        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.bad_request.value)
-    project_info = project_found[0]
-    _logger.info('file validation api: project info' + str(project_info))
-    return project_info
+    project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+    project = project_client.get(id=project_geid)
+    return project.json()
 
 
 def validate_delete_permissions(targets: list, project_code):

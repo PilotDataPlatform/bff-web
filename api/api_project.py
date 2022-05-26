@@ -1,7 +1,7 @@
 from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from config import ConfigClass
-from models.api_response import APIResponse, EAPIResponseCode
+from models.api_response import APIResponse
 from models.api_meta_class import MetaAPI
 from common import LoggerFactory, ProjectClientSync
 from services.permissions_service.decorators import permissions_check
@@ -38,7 +38,7 @@ class APIProject(metaclass=MetaAPI):
             my_res = APIResponse()
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
             project = project_client.get(id=project_geid)
-            my_res.set_result(project.josn())
+            my_res.set_result(project.json())
             return my_res.to_dict, my_res.code
 
     class RestfulProjectByCode(Resource):
@@ -46,7 +46,7 @@ class APIProject(metaclass=MetaAPI):
             my_res = APIResponse()
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
             project = project_client.get(code=project_code)
-            my_res.set_result(project.josn())
+            my_res.set_result(project.json())
             return my_res.to_dict, my_res.code
 
     class VirtualFolder(Resource):

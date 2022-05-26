@@ -63,7 +63,10 @@ class APIProjectV2(metaclass=MetaAPI):
                 "tags": post_data.get("tags"),
             }
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project_client.create(**payload)
+            project = project_client.create(**payload)
+
+            #if "icon" in post_data:
+            #    project.upload_logo(post_data["icon"])
 
             # Create MinIO bucket for project with name based on zone and dataset_code
             create_minio_bucket(project_code)
@@ -87,10 +90,14 @@ class APIProjectV2(metaclass=MetaAPI):
 def duplicate_check(project_code: str) -> bool:
     project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
     try:
-        project_client.get(project_code)
+        project_client.get(code=project_code)
     except ProjectNotFoundException:
         return False
-    return True
+    raise APIException(
+        error_msg="Error duplicate project code",
+        status_code=EAPIResponseCode.conflict.value
+    )
+
 
 def validate_post_data(post_data: dict):
     name = post_data.get("name", None)
@@ -99,8 +106,8 @@ def validate_post_data(post_data: dict):
     if not name or not code:
         _logger.error('Field name and code field is required.')
         raise APIException(
-            status_code=EAPIResponseCode.bad_request.value,
-            error_msg="Field name and code field is required."
+            error_msg="Field name and code field is required.",
+            status_code=EAPIResponseCode.bad_request.value
         )
 
     project_code_pattern = re.compile(ConfigClass.PROJECT_CODE_REGEX)
