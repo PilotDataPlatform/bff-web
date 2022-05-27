@@ -140,8 +140,12 @@ class UserContainerQuery(Resource):
         response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params=query)
         if response.status_code != 200:
             raise Exception(f"Error getting realm roles for {username} from auth service: " + str(response.json()))
-        realm_roles = response.json()["result"]
-        realm_roles = [i["name"] for i in realm_roles]
+        realm_roles = {}
+        for role in response.json()["result"]:
+            try:
+                realm_roles[role["name"].split("-")[0]] = role["name"].split("-")[1]
+            except Exception:
+                continue
 
         if data.get("is_all"):
             # This is terrible but it is required by frontend and will take to long for them to fix right now
@@ -156,7 +160,7 @@ class UserContainerQuery(Resource):
         if user_node["role"] != "admin":
             roles = realm_roles
             project_codes = ",".join(list(set(i.split("-")[0] for i in roles)))
-            payload["codes-any"] = project_codes
+            payload["code_any"] = project_codes
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project_result = project_client.search(**payload)
@@ -164,15 +168,7 @@ class UserContainerQuery(Resource):
 
         if user_node["role"] != "admin":
             for project in projects:
-                for role in realm_roles:
-                    try:
-                        role_project_code = role.split("-")[0]
-                        project_role = role.split("-")[1]
-                        if role_project_code == project["code"]:
-                            project["permission"] = project_role
-                            break
-                    except Exception:
-                        continue
+                project["permission"] = realm_roles.get(project["code"])
         else:
             for project in projects:
                 project["permission"] = "admin"
