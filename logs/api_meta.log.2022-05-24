@@ -1,0 +1,24 @@
+{"asctime": "2022-05-24 10:42:29,802", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,893", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,906", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,907", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Permissions denied for user test in meta listing"}
+{"asctime": "2022-05-24 10:42:29,918", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,918", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Permission Denied"}
+{"asctime": "2022-05-24 10:42:29,931", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,931", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Invalid zone"}
+{"asctime": "2022-05-24 10:42:29,940", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,940", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Invalid zone"}
+{"asctime": "2022-05-24 10:42:29,953", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:42:29,968", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,493", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,505", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,520", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,520", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Permissions denied for user test in meta listing"}
+{"asctime": "2022-05-24 10:47:32,535", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,535", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Permission Denied"}
+{"asctime": "2022-05-24 10:47:32,545", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,546", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Invalid zone"}
+{"asctime": "2022-05-24 10:47:32,560", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,561", "namespace": "unknown", "sub_name": "api_meta", "level": "ERROR", "message": "Invalid zone"}
+{"asctime": "2022-05-24 10:47:32,572", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}
+{"asctime": "2022-05-24 10:47:32,591", "namespace": "unknown", "sub_name": "api_meta", "level": "INFO", "message": "Call API for fetching file info"}

@@ -96,7 +96,7 @@ def test_list_templates_admin_200(test_client, requests_mocker, jwt_token_admin)
 
     params = {'project_code': 'test_project'}
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.get('v1/data/templates', query_string=params, headers=headers)
+    response = test_client.get('v1/data/manifests', query_string=params, headers=headers)
     assert response.status_code == 200
 
 
@@ -112,7 +112,7 @@ def test_create_new_templates_admin_200(test_client, requests_mocker, jwt_token_
     requests_mocker.post(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.post('v1/data/templates', json=MOCK_TEMPLATE_DATA, headers=headers)
+    response = test_client.post('v1/data/manifests', json=MOCK_TEMPLATE_DATA, headers=headers)
     assert response.status_code == 200
 
 
@@ -128,7 +128,7 @@ def test_get_template_by_id_admin_200(test_client, requests_mocker, jwt_token_ad
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.get(f'v1/data/template/{template_id}', headers=headers)
+    response = test_client.get(f'v1/data/manifest/{template_id}', headers=headers)
     assert response.status_code == 200
 
 
@@ -144,7 +144,7 @@ def test_get_template_by_invalid_id_admin_404(test_client, requests_mocker, jwt_
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{invalid_id}/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.get(f'v1/data/template/{invalid_id}', headers=headers)
+    response = test_client.get(f'v1/data/manifest/{invalid_id}', headers=headers)
     assert response.status_code == 404
 
 
@@ -160,7 +160,7 @@ def test_update_template_attributes_admin_200(test_client, requests_mocker, jwt_
     requests_mocker.put(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.put(f'v1/data/template/{template_id}', json=MOCK_TEMPLATE_UPDATE, headers=headers)
+    response = test_client.put(f'v1/data/manifest/{template_id}', json=MOCK_TEMPLATE_UPDATE, headers=headers)
     assert response.status_code == 200
 
 
@@ -176,7 +176,7 @@ def test_update_template_attributes_permission_denied_403(test_client, requests_
     requests_mocker.put(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
 
     headers = {'Authorization': jwt_token_contrib}
-    response = test_client.put(f'v1/data/template/{template_id}', json=MOCK_TEMPLATE_UPDATE, headers=headers)
+    response = test_client.put(f'v1/data/manifest/{template_id}', json=MOCK_TEMPLATE_UPDATE, headers=headers)
     assert response.status_code == 403
 
 
@@ -189,14 +189,14 @@ def test_delete_template_by_id_admin_200(test_client, requests_mocker, jwt_token
 
     payload = {'project_code': 'test_project'}
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.delete(f'v1/data/template/{template_id}', json=payload, headers=headers)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
     assert response.status_code == 200
 
 
 def test_delete_template_by_id_permission_denied_403(test_client, jwt_token_contrib, has_permission_false):
     payload = {'project_code': 'test_project'}
     headers = {'Authorization': jwt_token_contrib}
-    response = test_client.delete(f'v1/data/template/{template_id}', json=payload, headers=headers)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
     assert response.status_code == 403
 
 
@@ -220,7 +220,7 @@ def test_update_template_attributes_of_file_admin_200(test_client, requests_mock
     requests_mocker.put(ConfigClass.METADATA_SERVICE + f'item/?id={file_id}', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.put(f'v1/file/{file_id}/template', json={'attr1': 'B'}, headers=headers)
+    response = test_client.put(f'v1/file/{file_id}/manifest', json={'attr1': 'B'}, headers=headers)
     assert response.status_code == 200
 
 
@@ -236,7 +236,7 @@ def test_update_template_attributes_of_file_permission_denied_contrib_403(test_c
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id}', json=mock_data)
 
     headers = {'Authorization': jwt_token_contrib}
-    response = test_client.put(f'v1/file/{file_id}/template', json={'attr1': 'B'}, headers=headers)
+    response = test_client.put(f'v1/file/{file_id}/manifest', json={'attr1': 'B'}, headers=headers)
     assert response.status_code == 403
 
 
@@ -252,7 +252,7 @@ def test_update_template_attributes_of_file_permission_denied_admin_403(test_cli
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id}', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.put(f'v1/file/{file_id}/template', json={'attr1': 'B'}, headers=headers)
+    response = test_client.put(f'v1/file/{file_id}/manifest', json={'attr1': 'B'}, headers=headers)
     assert response.status_code == 403
 
 
@@ -268,7 +268,7 @@ def test_import_template_admin_200(test_client, requests_mocker, jwt_token_admin
     requests_mocker.post(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.post('v1/import/template', json=MOCK_TEMPLATE_DATA, headers=headers)
+    response = test_client.post('v1/import/manifest', json=MOCK_TEMPLATE_DATA, headers=headers)
     assert response.status_code == 200
 
 
@@ -284,8 +284,8 @@ def test_export_template_admin_200(test_client, requests_mocker, jwt_token_admin
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
-    params = {'template_id': template_id}
-    response = test_client.get(f'v1/export/template', query_string=params, headers=headers)
+    params = {'manifest_id': template_id}
+    response = test_client.get(f'v1/export/manifest', query_string=params, headers=headers)
     assert response.status_code == 200
 
 
@@ -302,15 +302,14 @@ def test_list_file_template_attributes_admin_200(test_client, requests_mocker, j
 
     # get template
     mock_data = {
-        'result': [
+        'result':
             MOCK_TEMPLATE_DATA
-        ]
     }
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
 
     headers = {'Authorization': jwt_token_admin}
     payload = {'geid_list': [file_id]}
-    response = test_client.post(f'v1/file/template/query', json=payload, headers=headers)
+    response = test_client.post(f'v1/file/manifest/query', json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -328,7 +327,7 @@ def test_list_file_template_attributes_permission_denied_contrib_403(test_client
 
     headers = {'Authorization': jwt_token_contrib}
     payload = {'geid_list': [file_id]}
-    response = test_client.post(f'v1/file/template/query', json=payload, headers=headers)
+    response = test_client.post(f'v1/file/manifest/query', json=payload, headers=headers)
     assert response.status_code == 403
 
 
@@ -350,7 +349,7 @@ def test_list_file_template_attributes_template_not_found_contrib_404(test_clien
 
     headers = {'Authorization': jwt_token_contrib}
     payload = {'geid_list': [file_id]}
-    response = test_client.post(f'v1/file/template/query', json=payload, headers=headers)
+    response = test_client.post(f'v1/file/manifest/query', json=payload, headers=headers)
     assert response.status_code == 404
 
 
@@ -359,7 +358,7 @@ def test_attach_attributes_to_file_contrib_missing_attributes_field_400(test_cli
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
     }
     response = test_client.post(f'v1/file/attributes/attach', json=payload, headers=headers)
@@ -371,7 +370,7 @@ def test_attach_attributes_to_file_contrib_invalid_role_field_403(test_client, r
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
         'attributes': {'attr1': 'A'}
     }
@@ -399,7 +398,7 @@ def test_attach_attributes_to_folder_contrib_200(test_client, requests_mocker,
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
         'attributes': {'attr1': 'A'}
     }
@@ -408,8 +407,8 @@ def test_attach_attributes_to_folder_contrib_200(test_client, requests_mocker,
 
 
 def test_attach_attributes_to_folder_failed_contrib_500(test_client, requests_mocker,
-                                                         jwt_token_contrib, has_permission_true,
-                                                         has_project_contributor_role):
+                                                        jwt_token_contrib, has_permission_true,
+                                                        has_project_contributor_role):
     # get item by id
     file_id = MOCK_FILE_DATA['id']
     mock_data = {
@@ -426,7 +425,7 @@ def test_attach_attributes_to_folder_failed_contrib_500(test_client, requests_mo
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
         'attributes': {'attr1': 'A'}
     }
@@ -472,7 +471,7 @@ def test_attach_attributes_to_file_and_folder_contrib_200(test_client, requests_
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id'], MOCK_FILE_DATA_2['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
         'attributes': {'attr1': 'A'}
     }
@@ -481,8 +480,8 @@ def test_attach_attributes_to_file_and_folder_contrib_200(test_client, requests_
 
 
 def test_attach_attributes_to_file_failed_contrib_500(test_client, requests_mocker,
-                                                          jwt_token_contrib, has_permission_true,
-                                                          has_project_contributor_role):
+                                                      jwt_token_contrib, has_permission_true,
+                                                      has_project_contributor_role):
     MOCK_FILE_DATA_ATTR_1 = MOCK_FILE_DATA.copy()
     MOCK_FILE_DATA_ATTR_2 = MOCK_FILE_DATA_2.copy()
 
@@ -514,7 +513,7 @@ def test_attach_attributes_to_file_failed_contrib_500(test_client, requests_mock
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id'], MOCK_FILE_DATA_2['id']],
-        'template_id': template_id,
+        'manifest_id': template_id,
         'project_code': MOCK_FILE_DATA['container_code'],
         'attributes': {'attr1': 'A'}
     }

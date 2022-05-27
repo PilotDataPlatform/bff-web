@@ -28,20 +28,20 @@ _logger = LoggerFactory('api_data_manifest').get_logger()
 class APIDataManifest(metaclass=MetaAPI):
     def api_registry(self):
         api_ns_data_manifests.add_resource(
-            self.RestfulTemplates, '/data/templates')
+            self.RestfulManifests, '/data/manifests')
         api_ns_data_manifest.add_resource(
-            self.RestfulTemplate, '/data/template/<template_id>')
-        api_ns_data_manifest.add_resource(self.FileAttributes, '/file/<file_geid>/template')
+            self.RestfulManifest, '/data/manifest/<manifest_id>')
+        api_ns_data_manifest.add_resource(self.FileAttributes, '/file/<file_geid>/manifest')
         api_ns_data_manifest.add_resource(
-            self.ImportTemplate, '/import/template')
+            self.ImportManifest, '/import/manifest')
         api_ns_data_manifest.add_resource(
-            self.ExportTemplate, '/export/template')
+            self.ExportManifest, '/export/manifest')
         api_ns_data_manifest.add_resource(
-            self.FileTemplateQuery, '/file/template/query')
+            self.FileManifestQuery, '/file/manifest/query')
         api_ns_data_manifest.add_resource(
             self.AttachAttributes, '/file/attributes/attach')
 
-    class RestfulTemplates(Resource):
+    class RestfulManifests(Resource):
         @api_ns_data_manifest.expect(data_manifests)
         @api_ns_data_manifest.response(200, data_manifests_return)
         @jwt_required()
@@ -80,16 +80,16 @@ class APIDataManifest(metaclass=MetaAPI):
                 }
                 return error_msg, 500
 
-    class RestfulTemplate(Resource):
+    class RestfulManifest(Resource):
         @jwt_required()
-        def get(self, template_id):
+        def get(self, manifest_id):
             """
             Get an attribute template by id
             """
             my_res = APIResponse()
             try:
                 response = requests.get(
-                    ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
+                    ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
                 res = response.json()['result']
                 if not res:
                     my_res.set_code(EAPIResponseCode.not_found)
@@ -106,7 +106,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
         @jwt_required()
-        def put(self, template_id):
+        def put(self, manifest_id):
             """
             Update attributes of template by id
             """
@@ -121,7 +121,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return my_res.to_dict, my_res.code
 
             try:
-                params = {'id': template_id}
+                params = {'id': manifest_id}
                 response = requests.put(
                     ConfigClass.METADATA_SERVICE + 'template/', params=params, json=data)
                 return response.json(), response.status_code
@@ -134,7 +134,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
         @jwt_required()
-        def delete(self, template_id):
+        def delete(self, manifest_id):
             """
             Delete an attribute template
             """
@@ -149,7 +149,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return my_res.to_dict, my_res.code
 
             try:
-                params = {'id': template_id}
+                params = {'id': manifest_id}
                 response = requests.delete(ConfigClass.METADATA_SERVICE + 'template/', params=params)
                 return response.json(), response.status_code
             except Exception as e:
@@ -217,10 +217,11 @@ class APIDataManifest(metaclass=MetaAPI):
                 }
                 return error_msg, 500
 
-    class ImportTemplate(Resource):
+    class ImportManifest(Resource):
         """
         Import attribute template from portal as JSON
         """
+
         @jwt_required()
         @permissions_check("file_attribute_template", "*", "import")
         def post(self):
@@ -242,14 +243,15 @@ class APIDataManifest(metaclass=MetaAPI):
                 }
                 return error_msg, 500
 
-    class ExportTemplate(Resource):
+    class ExportManifest(Resource):
         """
         Export attribute template from portal as JSON
         """
+
         @jwt_required()
         def get(self):
             api_response = APIResponse()
-            template_id = request.args.get("template_id")
+            template_id = request.args.get("manifest_id")
             if not template_id:
                 api_response.set_code(EAPIResponseCode.bad_request)
                 api_response.set_result(f"Missing required field template_id")
@@ -277,10 +279,11 @@ class APIDataManifest(metaclass=MetaAPI):
                 }
                 return error_msg, 500
 
-    class FileTemplateQuery(Resource):
+    class FileManifestQuery(Resource):
         """
         List template attributes for files
         """
+
         @jwt_required()
         def post(self):
             api_response = APIResponse()
@@ -318,7 +321,7 @@ class APIDataManifest(metaclass=MetaAPI):
                             return api_response.to_dict, api_response.code
                         else:
                             attributes = []
-                            template_name = response.json()['result'][0]['name']
+                            template_name = response.json()['result']['name']
                             attribute = {'template_name': template_name,
                                          'template_id': template_id,
                                          'attributes': entity_attributes[template_id]}
@@ -339,7 +342,7 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         def post(self):
             api_response = APIResponse()
-            required_fields = ["template_id", "item_ids", "attributes", "project_code"]
+            required_fields = ["manifest_id", "item_ids", "attributes", "project_code"]
             data = request.get_json()
             payload = {'items': []}
             file_ids = []
@@ -382,7 +385,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 for item in items:
                     if item['type'] == 'folder':
                         params = {'id': item['id']}
-                        update = {'attribute_template_id': data['template_id'], 'attributes': data['attributes']}
+                        update = {'attribute_template_id': data['manifest_id'], 'attributes': data['attributes']}
                         response = requests.put(
                             ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', params=params, json=update)
                         if response.status_code != 200:
@@ -396,7 +399,7 @@ class APIDataManifest(metaclass=MetaAPI):
                             'parent': item['parent'],
                             'parent_path': item['parent_path'],
                             'type': item['type'],
-                            "attribute_template_id": data['template_id'],
+                            "attribute_template_id": data['manifest_id'],
                             "attributes": data['attributes']
                         }
                         payload['items'].append(update)
