@@ -10,6 +10,7 @@ from resources.utils import http_query_node
 from common import LoggerFactory
 from services.permissions_service.decorators import permissions_check
 from services.permissions_service.utils import get_project_role, has_permission
+from services.meta import get_entity_by_id
 
 _logger = LoggerFactory('api_files_ops_v1').get_logger()
 
@@ -177,7 +178,7 @@ def validate_delete_permissions(targets: list, project_code):
     user_project_role = get_project_role(project_code)
     if user_project_role not in ["admin", "platform-admin"]:
         for target in targets:
-            source = get_entity_by_id(target['geid'])
+            source = get_entity_by_id(target['id'])
             zone = "greenroom" if source["zone"] == 1 else "core"
 
             if user_project_role == 'contributor':
