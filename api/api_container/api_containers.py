@@ -69,10 +69,10 @@ class Container(Resource):
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = project_client.get(id=project_id)
 
-        #if "icon" in update_data:
-        #    logo = update_data["icon"]
-        #    project.upload_logo(logo)
-        #    del update_data["icon"]
+        if "icon" in update_data:
+            logo = update_data["icon"]
+            project.upload_logo(logo)
+            del update_data["icon"]
 
         result = project.update(**update_data)
         api_response.set_result(result.json())

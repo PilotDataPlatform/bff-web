@@ -65,8 +65,8 @@ class APIProjectV2(metaclass=MetaAPI):
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
             project = project_client.create(**payload)
 
-            #if "icon" in post_data:
-            #    project.upload_logo(post_data["icon"])
+            if "icon" in post_data:
+                project.upload_logo(post_data["icon"])
 
             # Create MinIO bucket for project with name based on zone and dataset_code
             create_minio_bucket(project_code)
