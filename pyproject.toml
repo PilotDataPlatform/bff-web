@@ -44,7 +44,7 @@ opentelemetry-instrumentation-flask = "0.26b1"
 opentelemetry-instrumentation-requests = "0.26b1"
 minio = "7.1.2"
 httpx = "0.22.0"
-pilot-platform-common = "0.0.25"
+pilot-platform-common = "0.0.28"
 
 [tool.poetry.dev-dependencies]
 pytest = "6.0.2"
