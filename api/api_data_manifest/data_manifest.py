@@ -364,7 +364,7 @@ class APIDataManifest(metaclass=MetaAPI):
             data = request.get_json()
             payload = {'items': []}
             file_ids = []
-            responses = []
+            responses = {"result": []}
 
             # Check required fields
             for field in required_fields:
@@ -411,7 +411,9 @@ class APIDataManifest(metaclass=MetaAPI):
                             api_response.set_code(response.status_code)
                             api_response.set_result(response.text)
                             return api_response.to_dict, api_response.code
-                        responses.append(response.json()['result'])
+                        for child in response.json()['result']:
+                            responses['result'].append({'name': child['name'], "geid": child['id'],
+                                                        "operation_status": "SUCCEED"})
                     else:
                         update = {
                             'parent': item['parent'],
@@ -431,7 +433,9 @@ class APIDataManifest(metaclass=MetaAPI):
                         api_response.set_code(response.status_code)
                         api_response.set_result(response.text)
                         return api_response.to_dict, api_response.code
-                    responses.append(response.json()['result'])
+                    for item in response.json()['result']:
+                        responses['result'].append({'name': item['name'], "geid": item['id'],
+                                                    "operation_status": "SUCCEED"})
 
                 api_response.set_result(responses)
                 return api_response.to_dict, api_response.code
