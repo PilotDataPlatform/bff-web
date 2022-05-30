@@ -1,26 +1,21 @@
 import jwt as pyjwt
 import requests
-from common import GEIDClient
+from common import LoggerFactory, ProjectClientSync
 from flask import request
 from flask_restx import Resource
-from common import LoggerFactory
 
 from config import ConfigClass
-from resources.error_handler import APIException
 from resources.swagger_modules import new_user_module, user_sample_return
-from resources.utils import *
-from services.neo4j_service.neo4j_client import Neo4jClient
 
 from .namespace import users_entity_ns
 
 
 class ADUserUpdate(Resource):
 
-    geid_client = GEIDClient()
+    logger = LoggerFactory('api_aduser_update').get_logger()
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
-        self.neo4j_client = Neo4jClient()
-        self.logger = LoggerFactory('api_aduser_update').get_logger()
 
     @users_entity_ns.expect(new_user_module)
     @users_entity_ns.response(200, user_sample_return)
@@ -41,15 +36,12 @@ class ADUserUpdate(Resource):
             # validate payload request body
             post_data = request.get_json()
             self.logger.info('Calling API for updating AD user: {}'.format(post_data))
-            # Get current user info
-            # Request payload validation
+
             email = post_data.get('email', None)
             username = post_data.get("username", None)
             first_name = post_data.get("first_name", None)
             last_name = post_data.get("last_name", None)
 
-            # here this api will NOT have permission, but we do
-            # need to check if token matchs the input user
             if current_username != username:
                 raise Exception(f"The username is not matched: {current_username}")
 
@@ -61,8 +53,8 @@ class ADUserUpdate(Resource):
             # and get the target project
             has_invite = True
             email = email.lower()
-            filters = {"email":email, "status": "pending"}
-            response = requests.post(ConfigClass.AUTH_SERVICE + "invitation-list", json={"filters":filters})
+            filters = {"email": email, "status": "pending"}
+            response = requests.post(ConfigClass.AUTH_SERVICE + "invitation-list", json={"filters": filters})
             if not response.json()["result"]:
                 # Test account requests won't have an invite, they're already linked to the test projectt
                 has_invite = False
@@ -77,18 +69,16 @@ class ADUserUpdate(Resource):
                     self.bulk_create_name_folder_admin(username)
                 else:
                     if invite_detail["project_code"]:
-                        response = self.neo4j_client.get_container_by_code(invite_detail["project_code"])
-                        if response["code"] != 200:
-                            raise APIException(
-                                error_msg=response["error_msg"],
-                                status_code=response["code"]
-                            )
-                        project_code = response["result"]["code"]
-                        self.assign_user_role_ad(project_code+'-'+invite_detail["project_role"], email=email)
-                        self.bulk_create_folder(folder_name=username, project_code_list=[project_code])
+                        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                        project = project_client.get(code=invite_detail["project_code"])
+                        self.assign_user_role_ad(project.code + '-' + invite_detail["project_role"], email=email)
+                        self.bulk_create_folder(folder_name=username, project_code_list=[project.code])
 
                 invite_id = invite_detail["id"]
-                response = requests.put(ConfigClass.AUTH_SERVICE + f"invitation/{invite_id}", json={"status":"complete"})
+                response = requests.put(
+                    ConfigClass.AUTH_SERVICE + f"invitation/{invite_id}",
+                    json={"status": "complete"}
+                )
                 invite_detail = response.json()
 
             # update status/login
@@ -96,8 +86,7 @@ class ADUserUpdate(Resource):
         except Exception as error:
             self.logger.error(f"Error when updating user data : {error}")
 
-            return {"result":{}, "error_msg":str(error)}
-
+            return {"result": {}, "error_msg": str(error)}
 
     def update_user_status(self, email):
         payload = {
@@ -110,7 +99,6 @@ class ADUserUpdate(Resource):
             self.logger.info('Done with updating user node to neo4j')
             raise (Exception('Internal error when updating user data'))
         return {"result": response.json()}, 200
-
 
     def assign_user_role_ad(self, role: str, email):
         url = ConfigClass.AUTH_SERVICE + "user/project-role"
@@ -126,7 +114,6 @@ class ADUserUpdate(Resource):
                                                                                      role,
                                                                                      response_assign.text))
 
-
     def bulk_create_folder(self, folder_name: str, project_code_list: list):
         try:
             self.logger.info(f"bulk creating namespace folder in greenroom \
@@ -141,35 +128,32 @@ class ADUserUpdate(Resource):
                         "name": folder_name,
                         "zone": 0 if zone == "greenroom" else 1,
                         "type": "name_folder",
-                        "owner":folder_name,
+                        "owner": folder_name,
                         "container_code": project_code,
                         "container_type": "project",
                         "size": 0,
                         "location_uri": "",
                         "version": "",
                     })
-            payload = {"items": folders}
             response = requests.post(ConfigClass.METADATA_SERVICE + "items/batch/", json=folders)
             if response.status_code == 200:
                 self.logger.info(f"In namespace: {zone}, folders bulk created successfully for user: {folder_name} \
                         under {project_code_list}")
         except Exception as error:
             self.logger.error(
-                f"Error while trying to create namespace folder for user : {folder_name} under {project_code_list} : {error}")
+                f"Error while trying to create namespace folder for user : {folder_name} under {project_code_list} : \
+                        {error}")
             raise error
-
 
     def bulk_create_name_folder_admin(self, username):
         try:
             project_code_list = []
-            url = ConfigClass.NEO4J_SERVICE + 'nodes/Container/query'
-            res = requests.post(url, json={})
-            if res.status_code == 200 and len(res.json()) > 0:
-                for project in res.json():
-                    project_code = project["code"]
-                    project_code_list.append(project_code)
+            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project_result = project_client.search()
+            projects = project_result["result"]
+            for project in projects:
+                project_code_list.append(project.code)
             self.bulk_create_folder(folder_name=username, project_code_list=project_code_list)
             return False
         except Exception as error:
             self.logger.error(f"Error while querying Container details : {error}")
-

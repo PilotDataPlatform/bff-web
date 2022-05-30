@@ -2,10 +2,11 @@ from models.api_meta_class import MetaAPI
 
 from .api_aduser_update import ADUserUpdate
 from .api_container_user import ContainerUser
-from .container_operation_neo4j import *
-from .namespace import datasets_entity_ns, users_entity_ns, entity_ns_v2
-from .user_operation import *
-from .api_folder_creation import FolderCreation, FolderCreationV2
+from .api_containers import Container, Containers
+from .api_folder_creation import FolderCreation
+from .namespace import datasets_entity_ns, users_entity_ns
+from .user_operation import (ContainerAdmins, ContainerUsers,
+                             UserContainerQuery, Users)
 
 
 class APIContainer(metaclass=MetaAPI):
@@ -13,22 +14,19 @@ class APIContainer(metaclass=MetaAPI):
         datasets_entity_ns.add_resource(Containers, '/')
 
         # Actions on specific dataset
-        datasets_entity_ns.add_resource(Container, '/<project_geid>')
+        datasets_entity_ns.add_resource(Container, '/<project_id>')
 
         # Actions on multiple users
-        datasets_entity_ns.add_resource(ContainerUsers, '/<project_geid>/users')
-        datasets_entity_ns.add_resource(ContainerUsersQuery, '/<project_geid>/users/query')
-        datasets_entity_ns.add_resource(ContainerAdmins, '/<project_geid>/admins')
+        datasets_entity_ns.add_resource(ContainerUsers, '/<project_id>/users')
+        datasets_entity_ns.add_resource(ContainerAdmins, '/<project_id>/admins')
 
         # add the folder operation
-        datasets_entity_ns.add_resource(FolderCreation, '/<project_geid>/folder')
-        entity_ns_v2.add_resource(FolderCreationV2, '/<project_geid>/folder')
+        datasets_entity_ns.add_resource(FolderCreation, '/<project_id>/folder')
 
         # Actions on the specific user
 
-        datasets_entity_ns.add_resource(ContainerUser, '/<project_geid>/users/<username>')
+        datasets_entity_ns.add_resource(ContainerUser, '/<project_id>/users/<username>')
         # Actions on users
         users_entity_ns.add_resource(Users, '/platform')
-        users_entity_ns.add_resource(
-            UserContainerQuery, '/<username>/containers')
+        users_entity_ns.add_resource(UserContainerQuery, '/<username>/containers')
         users_entity_ns.add_resource(ADUserUpdate, '')

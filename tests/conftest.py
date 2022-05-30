@@ -7,6 +7,7 @@ from config import ConfigClass
 
 from app import Flask
 from app import create_app
+from testcontainers.redis import RedisContainer
 
 
 @pytest.fixture
@@ -16,7 +17,8 @@ def app():
 
 
 @pytest.fixture(scope='session')
-def test_client():
+def test_client(redis):
+    ConfigClass.REDIS_URL = redis.url
     app = create_app()
     return app.test_client()
 
@@ -86,13 +88,16 @@ def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = ""
 @pytest.fixture
 def has_permission_true(mocker):
     mocker.patch("services.permissions_service.utils.has_permission", return_value=True)
+    mocker.patch("services.permissions_service.decorators.has_permission", return_value=True)
     mocker.patch("api.api_files.meta.has_permission", return_value=True)
     mocker.patch("api.api_data_manifest.data_manifest.has_permission", return_value=True)
+
 
 
 @pytest.fixture
 def has_permission_false(mocker):
     mocker.patch("services.permissions_service.utils.has_permission", return_value=False)
+    mocker.patch("services.permissions_service.decorators.has_permission", return_value=False)
     mocker.patch("api.api_files.meta.has_permission", return_value=False)
     mocker.patch("api.api_data_manifest.data_manifest.has_permission", return_value=False)
 
@@ -109,7 +114,17 @@ def has_invalid_project_role(mocker):
     mocker.patch("api.api_data_manifest.data_manifest.get_project_role", return_value=None)
 
 
+
 @pytest.fixture
 def request_context(app):
     with app.test_request_context() as context:
         yield context
+
+
+@pytest.fixture(scope='session', autouse=True)
+def redis():
+    with RedisContainer("redis:latest") as redis:
+        host = redis.get_container_host_ip()
+        port = redis.get_exposed_port(redis.port_to_expose)
+        redis.url = f"redis://{host}:{port}"
+        yield redis

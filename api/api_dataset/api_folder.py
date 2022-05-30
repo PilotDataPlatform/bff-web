@@ -1,8 +1,7 @@
-from flask_restx import Api, Resource, fields
+from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from flask import request
 
-from services.neo4j_service.neo4j_client import Neo4jClient
 from common import LoggerFactory
 from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse, EAPIResponseCode

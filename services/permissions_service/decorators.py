@@ -63,7 +63,7 @@ def dataset_permission_bycode():
                 return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
 
             return function(*args, **kwargs)
-            
+
         return wrapper
     return inner
 

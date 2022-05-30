@@ -1,12 +1,11 @@
 from flask import request
-from flask_jwt import current_identity, jwt_required
+from flask_jwt import jwt_required
 from flask_restx import Resource
-from common import LoggerFactory
+from common import ProjectClientSync
 
 from api import module_api
 from config import ConfigClass
 from models.api_meta_class import MetaAPI
-from models.api_response import APIResponse, EAPIResponseCode
 import httpx
 
 
@@ -21,7 +20,6 @@ class APIEvent(metaclass=MetaAPI):
         @jwt_required()
         def get(self):
             """ List user events """
-            api_response = APIResponse()
             event_response = httpx.get(ConfigClass.AUTH_SERVICE + "events", params=request.args)
             event_response_json = event_response.json()
             events = event_response.json()["result"]
@@ -30,8 +28,9 @@ class APIEvent(metaclass=MetaAPI):
             # get projects by code, will be replace when project refactor is complete
             projects = []
             for code in project_codes:
-                response = httpx.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json={"code":code})
-                projects.append(response.json()[0])
+                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = project_client.get(code=code)
+                projects.append(project.json())
 
             for event in events:
                 for project in projects:

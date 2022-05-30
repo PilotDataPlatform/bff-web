@@ -1,9 +1,8 @@
 from flask import request
 from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
-from resources.utils import get_container_id
 from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
+from common import LoggerFactory, ProjectClientSync
 from services.permissions_service.utils import get_project_role, get_project_code_from_request
 from config import ConfigClass
 import json
@@ -30,7 +29,6 @@ class FileSearch(Resource):
 
         query = json.loads(query)
         query_params = {"global_entity_id": project_geid}
-        container_id = get_container_id(query_params)
         if current_identity['role'] != 'admin':
             project_code = get_project_code_from_request({"project_geid": project_geid})
             project_role = get_project_role(project_code)
@@ -80,34 +78,10 @@ class FileSearch(Resource):
                     _res.set_error_msg('Permission Deined')
                     return _res.to_dict, _res.code
 
-        try:
-            neo_url = ConfigClass.NEO4J_SERVICE + \
-                'nodes/Container/node/{}'.format(container_id)
-            response = requests.get(neo_url)
-            if response.status_code != 200:
-                _logger.error(
-                    'Failed to query project from neo4j service:   ' + response.text)
-                _res.set_code(EAPIResponseCode.internal_error)
-                _res.set_result("Failed to query project from neo4j service")
-                return _res.to_dict, _res.code
-            else:
-                data = response.json()
 
-                if len(data) < 1:
-                    _logger.error(
-                        'There is no project in neo4j service:   ' + response.text)
-                    _res.set_code(EAPIResponseCode.internal_error)
-                    _res.set_result(
-                        "There is no project in neo4j servic, which id is ".format(container_id))
-                    return _res.to_dict, _res.code
-
-                project_code = data[0]["code"]
-        except Exception as e:
-            _logger.error(
-                'Failed to query project from neo4j service:   ' + str(e))
-            _res.set_code(EAPIResponseCode.internal_error)
-            _res.set_result("Failed to query project from neo4j service")
-            return _res.to_dict, _res.code
+        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = project_client.get(id=project_geid)
+        project_code = project.code
 
         try:
             query["project_code"] = {

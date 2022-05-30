@@ -9,7 +9,6 @@ python = "^3.7"
 aniso8601 = "8.0.0"
 attrs = "19.3.0"
 certifi = "2020.4.5.1"
-cffi = "1.14.0"
 chardet = "3.0.4"
 Flask = "1.1.4"
 Flask-Cors = "3.0.8"
@@ -44,14 +43,17 @@ opentelemetry-instrumentation-flask = "0.26b1"
 opentelemetry-instrumentation-requests = "0.26b1"
 minio = "7.1.2"
 httpx = "0.22.0"
-pilot-platform-common = "0.0.25"
+pilot-platform-common = "0.0.28"
 
 [tool.poetry.dev-dependencies]
-pytest = "6.0.2"
+pytest = "6.2.5"
 pytest-env = "0.6.2"
 pytest-mock = "3.7.0"
+pytest-httpx = "0.20.0"
 coverage = "6.3.2"
 requests-mock = "1.9.3"
+testcontainers = "3.4.2"
+redis = "4.3.1"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

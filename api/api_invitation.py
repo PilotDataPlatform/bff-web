@@ -2,7 +2,7 @@ import requests
 from flask import request
 from flask_jwt import current_identity, jwt_required
 from flask_restx import Resource
-from common import LoggerFactory
+from common import LoggerFactory, ProjectClientSync
 
 from api import module_api
 from config import ConfigClass
@@ -14,7 +14,6 @@ from resources.swagger_modules import (
     create_invitation_return_example,
 )
 from resources.utils import check_invite_permissions
-from services.neo4j_service.neo4j_client import Neo4jClient
 from services.permissions_service.utils import has_permission
 
 api_ns_invitations = module_api.namespace('Invitation Restful', description='Portal Invitation Restful', path='/v1')
@@ -36,19 +35,15 @@ class APIInvitation(metaclass=MetaAPI):
             _logger = LoggerFactory('api_invitation').get_logger()
             my_res = APIResponse()
             post_json = request.get_json()
-            neo4j_client = Neo4jClient()
             relation_data = post_json.get('relationship', {})
 
             _logger.info(f'Start Creating Invitation: {post_json}')
 
-            project_node = None
             if relation_data:
-                response = neo4j_client.get_container_by_geid(relation_data.get('project_geid'))
-                if response.get('code') != 200:
-                    return response, response.get('code')
-                project_node = response['result']
+                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = project_client.get(id=relation_data.get('project_geid'))
 
-            if not check_invite_permissions(project_node, current_identity):
+            if not check_invite_permissions(project.json(), current_identity):
                 my_res.set_result('Permission denied')
                 my_res.set_code(EAPIResponseCode.forbidden)
                 return my_res.to_dict, my_res.code
@@ -69,7 +64,6 @@ class APIInvitation(metaclass=MetaAPI):
             my_res = APIResponse()
             _logger = LoggerFactory('api_invitation').get_logger()
             project_geid = request.args.get('project_geid')
-            neo4j_client = Neo4jClient()
 
             if current_identity['role'] != 'admin' and not project_geid:
                 my_res.set_result('Permission denied')
@@ -77,16 +71,10 @@ class APIInvitation(metaclass=MetaAPI):
                 return my_res.to_dict, my_res.code
 
             if project_geid:
-                response = neo4j_client.get_container_by_geid(project_geid)
-                if response.get('code') == 404:
-                    my_res.set_result('Container does not exist in platform')
-                    my_res.set_code(EAPIResponseCode.not_found)
-                    return my_res.to_dict, my_res.code
-                elif response.get('code') != 200:
-                    return response
-                project_node = response['result']
+                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = project_client.get(id=project_geid)
 
-                if not has_permission(project_node['code'], 'invite', '*', 'create'):
+                if not has_permission(project.code, 'invite', '*', 'create'):
                     my_res.set_result('Permission denied')
                     my_res.set_code(EAPIResponseCode.unauthorized)
                     return my_res.to_dict, my_res.code
@@ -111,16 +99,9 @@ class APIInvitation(metaclass=MetaAPI):
             project_geid = filters.get('project_id', None)
 
             if current_identity['role'] != 'admin':
-                neo4j_client = Neo4jClient()
-                response = neo4j_client.get_container_by_geid(project_geid)
-                if response.get('code') == 404:
-                    my_res.set_result('Container does not exist in platform')
-                    my_res.set_code(EAPIResponseCode.not_found)
-                    return my_res.to_dict, my_res.code
-                elif response.get('code') != 200:
-                    return response
-                project_node = response['result']
-                if not has_permission(project_node['code'], 'invite', '*', 'view'):
+                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = project_client.get(id=project_geid)
+                if not has_permission(project.code, 'invite', '*', 'view'):
                     my_res.set_code(EAPIResponseCode.forbidden)
                     my_res.set_error_msg('Permission denied')
                     return my_res.to_dict, my_res.code

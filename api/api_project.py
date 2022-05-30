@@ -1,10 +1,9 @@
 from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from config import ConfigClass
-from models.api_response import APIResponse, EAPIResponseCode
+from models.api_response import APIResponse
 from models.api_meta_class import MetaAPI
-from common import LoggerFactory
-from services.container_services.container_manager import SrvContainerManager
+from common import LoggerFactory, ProjectClientSync
 from services.permissions_service.decorators import permissions_check
 from api import module_api
 from flask import request
@@ -37,43 +36,17 @@ class APIProject(metaclass=MetaAPI):
         def get(self, project_geid):
             # init resp
             my_res = APIResponse()
-            # init container_mgr
-            container_mgr = SrvContainerManager()
-            if not project_geid:
-                my_res.set_code(EAPIResponseCode.bad_request)
-                my_res.set_error_msg('Invalid request, need project_geid')
-
-            project_info = container_mgr.get_by_project_geid(project_geid)
-            if project_info[0]:
-                if len(project_info[1]) > 0:
-                    my_res.set_code(EAPIResponseCode.success)
-                    my_res.set_result(project_info[1][0])
-                else:
-                    my_res.set_code(EAPIResponseCode.not_found)
-                    my_res.set_error_msg('Project Not Found: ' + project_geid)
-            else:
-                my_res.set_code(EAPIResponseCode.internal_error)
+            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = project_client.get(id=project_geid)
+            my_res.set_result(project.json())
             return my_res.to_dict, my_res.code
 
     class RestfulProjectByCode(Resource):
         def get(self, project_code):
-            # init resp
             my_res = APIResponse()
-            # init container_mgr
-            container_mgr = SrvContainerManager()
-            if not project_code:
-                my_res.set_code(EAPIResponseCode.bad_request)
-                my_res.set_error_msg('Invalid request, need project_code')
-            project_info = container_mgr.get_by_project_code(project_code)
-            if project_info[0]:
-                if len(project_info[1]) > 0:
-                    my_res.set_code(EAPIResponseCode.success)
-                    my_res.set_result(project_info[1][0])
-                else:
-                    my_res.set_code(EAPIResponseCode.not_found)
-                    my_res.set_error_msg('Project Not Found: ' + project_code)
-            else:
-                my_res.set_code(EAPIResponseCode.internal_error)
+            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = project_client.get(code=project_code)
+            my_res.set_result(project.json())
             return my_res.to_dict, my_res.code
 
     class VirtualFolder(Resource):

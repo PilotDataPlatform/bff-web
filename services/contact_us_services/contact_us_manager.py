@@ -8,7 +8,6 @@ from config import ConfigClass
 from models.contact_us import ContactUsForm
 from models.service_meta_class import MetaService
 from resources.utils import helper_now_utc
-from services.container_services.container_manager import SrvContainerManager
 from services.notifier_services.email_service import SrvEmail
 
 
@@ -18,7 +17,6 @@ class SrvContactUsManager(metaclass=MetaService):
 
     def save_invitation(self, invitation: ContactUsForm, access_token, current_identity):
         email_sender = SrvEmail()
-        container_mgr = SrvContainerManager()
 
         subject = f'ACTION REQUIRED - {ConfigClass.PROJECT_NAME} Support Request Submitted'
         email_sender.send(

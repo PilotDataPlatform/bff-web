@@ -8,6 +8,7 @@ from api import module_api
 from config import ConfigClass
 from services.permissions_service.decorators import permissions_check
 import requests
+from common import ProjectClientSync
 
 
 api_ns_report = module_api.namespace(
@@ -47,13 +48,12 @@ class APIAnnouncement(metaclass=MetaAPI):
                 api_response.set_code(EAPIResponseCode.bad_request)
                 return api_response.to_dict, api_response.code
 
-            # Get Dataset
-            response = requests.post(ConfigClass.NEO4J_SERVICE + "nodes/Container/query", json={"code": data["project_code"]})
-            if not response.json():
-                api_response.set_error_msg("Dataset not found")
-                api_response.set_code(EAPIResponseCode.not_found)
-                return api_response.to_dict, api_response.code
-            dataset_id = response.json()[0]["id"]
+            project_client = ProjectClientSync(
+                ConfigClass.PROJECT_SERVICE,
+                ConfigClass.REDIS_URL
+            )
+            # will 404 if project doesn't exist
+            project_client.get(code=data["project_code"])
 
             data["publisher"] = current_identity["username"]
             response = requests.post(ConfigClass.NOTIFY_SERVICE + "/v1/announcements", json=data)
