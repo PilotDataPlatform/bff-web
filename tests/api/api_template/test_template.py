@@ -277,9 +277,7 @@ def test_export_template_admin_200(test_client, requests_mocker, jwt_token_admin
     requests_mocker.get(ConfigClass.AUTH_SERVICE + 'authorize', json=mock_data)
 
     mock_data = {
-        'result': [
-            MOCK_TEMPLATE_DATA
-        ]
+        'result': MOCK_TEMPLATE_DATA
     }
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
 
@@ -291,7 +289,7 @@ def test_export_template_admin_200(test_client, requests_mocker, jwt_token_admin
 
 def test_list_file_template_attributes_admin_200(test_client, requests_mocker, jwt_token_admin, has_permission_true):
     MOCK_FILE_DATA_ATTR = MOCK_FILE_DATA.copy()
-    MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
+    MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr2': 'A'}}
     file_id = MOCK_FILE_DATA['id']
 
     # get item by id
@@ -392,7 +390,7 @@ def test_attach_attributes_to_folder_contrib_200(test_client, requests_mocker,
     MOCK_FILE_DATA_ATTR = MOCK_FILE_DATA.copy()
     MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
     mock_data = {
-        'result': MOCK_FILE_DATA_ATTR
+        'result': [MOCK_FILE_DATA_ATTR]
     }
     requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
     headers = {'Authorization': jwt_token_contrib}
@@ -455,7 +453,7 @@ def test_attach_attributes_to_file_and_folder_contrib_200(test_client, requests_
     # update attributes for folder (bequeath)
     MOCK_FILE_DATA_ATTR_1['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
     mock_data = {
-        'result': MOCK_FILE_DATA_ATTR_1
+        'result': [MOCK_FILE_DATA_ATTR_1]
     }
     requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
 
@@ -501,7 +499,7 @@ def test_attach_attributes_to_file_failed_contrib_500(test_client, requests_mock
     # update attributes for folder (bequeath)
     MOCK_FILE_DATA_ATTR_1['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
     mock_data = {
-        'result': MOCK_FILE_DATA_ATTR_1
+        'result': [MOCK_FILE_DATA_ATTR_1]
     }
     requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
 
