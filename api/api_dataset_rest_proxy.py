@@ -1,20 +1,23 @@
-from config import ConfigClass
-from flask_jwt import jwt_required, current_identity
-from flask_restx import Api, Resource, fields
-from flask import request
-from models.api_meta_class import MetaAPI
-from services.permissions_service.decorators import \
-    permissions_check, dataset_permission, dataset_permission_bycode
-from api import module_api
 import requests
+from flask import request
+from flask_jwt import current_identity, jwt_required
+from flask_restx import Api, Resource, fields
 
-api_ns_dataset_proxy = module_api.namespace('DatasetProxy', description='', path ='/v1')
-api_ns_dataset_list_proxy = module_api.namespace('DatasetProxy', description='', path ='/v1')
+from api import module_api
+from config import ConfigClass
+from models.api_meta_class import MetaAPI
+from services.dataset import get_dataset_by_id
+from services.permissions_service.decorators import (dataset_permission,
+                                                     dataset_permission_bycode,
+                                                     permissions_check)
 
-## for backend services down/on testing
+api_ns_dataset_proxy = module_api.namespace('DatasetProxy', description='', path='/v1')
+api_ns_dataset_list_proxy = module_api.namespace('DatasetProxy', description='', path='/v1')
+
+
 class APIDatasetProxy(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_geid>')
+        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>')
         api_ns_dataset_proxy.add_resource(self.RestfulPost, '/dataset')
         api_ns_dataset_proxy.add_resource(self.CodeRestful, '/dataset-peek/<dataset_code>')
         api_ns_dataset_list_proxy.add_resource(self.List, '/users/<username>/datasets')
@@ -32,16 +35,16 @@ class APIDatasetProxy(metaclass=MetaAPI):
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
-        def get(self, dataset_geid):
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}".format(dataset_geid)
+        def get(self, dataset_id):
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}".format(dataset_id)
             respon = requests.get(url)
             return respon.json(), respon.status_code
 
 
         @jwt_required()
         @dataset_permission()
-        def put(self, dataset_geid):
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}".format(dataset_geid)
+        def put(self, dataset_id):
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}".format(dataset_id)
             payload_json = request.get_json()
             respon = requests.put(url, json=payload_json, headers=request.headers)
             return respon.json(), respon.status_code
@@ -80,14 +83,14 @@ class APIDatasetProxy(metaclass=MetaAPI):
 
 class APIDatasetFileProxy(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_geid>/files')
+        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files')
 
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
-        def get(self, dataset_geid):
+        def get(self, dataset_id):
 
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_geid)
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_id)
             respon = requests.get(url, params=request.args, headers=request.headers, \
                 cookies=request.cookies)
             return respon.json(), respon.status_code
@@ -95,9 +98,9 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
 
         @jwt_required()
         @dataset_permission()
-        def post(self, dataset_geid):
+        def post(self, dataset_id):
 
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_geid)
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_id)
             payload_json = request.get_json()
             respon = requests.post(url, json=payload_json, headers=request.headers, \
                 cookies=request.cookies)
@@ -106,8 +109,8 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
 
         @jwt_required()
         @dataset_permission()
-        def put(self, dataset_geid):
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_geid)
+        def put(self, dataset_id):
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_id)
             payload_json = request.get_json()
             respon = requests.put(url, json=payload_json, headers=request.headers, \
                 cookies=request.cookies)
@@ -116,9 +119,9 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
 
         @jwt_required()
         @dataset_permission()
-        def delete(self, dataset_geid):
+        def delete(self, dataset_id):
 
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_geid)
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files".format(dataset_id)
             payload_json = request.get_json()
             respon = requests.delete(url, json=payload_json, headers=request.headers, \
                 cookies=request.cookies)
@@ -127,14 +130,14 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
 
 class APIDatasetFileRenameProxy(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_geid>/files/<file_geid>')
+        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files/<file_geid>')
 
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
-        def post(self, dataset_geid, file_geid):
+        def post(self, dataset_id, file_geid):
 
-            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files/{}".format(dataset_geid, file_geid)
+            url = ConfigClass.DATASET_SERVICE + "dataset/{}/files/{}".format(dataset_id, file_geid)
             payload_json = request.get_json()
             respon = requests.post(url, json=payload_json, headers=request.headers, \
                 cookies=request.cookies)
@@ -143,22 +146,21 @@ class APIDatasetFileRenameProxy(metaclass=MetaAPI):
 
 class APIDatasetFileTasks(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_geid>/file/tasks')
+        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/file/tasks')
 
     class Restful(Resource):
 
         @jwt_required()
         @dataset_permission()
-        def get(self, dataset_geid):
+        def get(self, dataset_id):
             request_params = request.args
             new_params = {
                 **request_params,
                 "label": "Dataset"
             }
 
-            relation_query_url = ConfigClass.NEO4J_SERVICE + "nodes/geid/"+dataset_geid
-            response = requests.get(relation_query_url)
-            new_params['code'] = response.json()[0].get("code")
+            dataset = get_dataset_by_id(dataset_id)
+            new_params['code'] = dataset["code"]
 
             url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
             response = requests.get(url, params=new_params)
@@ -166,12 +168,12 @@ class APIDatasetFileTasks(metaclass=MetaAPI):
 
         @jwt_required()
         @dataset_permission()
-        def delete(self, dataset_geid):
+        def delete(self, dataset_id):
             request_body = request.get_json()
             request_body.update({"label": "Dataset"})
-            relation_query_url = ConfigClass.NEO4J_SERVICE + "nodes/geid/"+dataset_geid
-            response = requests.get(relation_query_url)
-            request_body['code'] = response.json()[0].get("code")
+
+            dataset = get_dataset_by_id(dataset_id)
+            request_body['code'] = dataset["code"]
 
             url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
             response = requests.delete(url, json=request_body)

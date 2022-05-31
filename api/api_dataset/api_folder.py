@@ -14,16 +14,17 @@ api_resource = module_api.namespace('DatasetProxy', description='Folder  API', p
 
 _logger = LoggerFactory('api_versions').get_logger()
 
+
 class APIDatasetFolder(metaclass=MetaAPI):
     def api_registry(self):
-        api_resource.add_resource(self.DatasetFolder, '/<dataset_geid>/folder')
+        api_resource.add_resource(self.DatasetFolder, '/<dataset_id>/folder')
 
     class DatasetFolder(Resource):
         @jwt_required()
-        def post(self, dataset_geid):
-            _logger.info(f"POST dataset folder proxy")
+        def post(self, dataset_id):
+            _logger.info("POST dataset folder proxy")
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
 
@@ -32,8 +33,7 @@ class APIDatasetFolder(metaclass=MetaAPI):
                 **request.get_json()
             }
             try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + f"dataset/{dataset_geid}/folder", json=payload)
-                print(ConfigClass.DATASET_SERVICE)
+                response = requests.post(ConfigClass.DATASET_SERVICE + f"dataset/{dataset_id}/folder", json=payload)
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)

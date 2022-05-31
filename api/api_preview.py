@@ -1,15 +1,15 @@
 import requests
+from common import LoggerFactory
 from flask import Response, request
 from flask_jwt import current_identity, jwt_required
 from flask_restx import Resource
-from common import LoggerFactory
 
 from api import module_api
 from config import ConfigClass
 from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse, EAPIResponseCode
+from services.dataset import get_dataset_by_id
 from services.meta import get_entity_by_id
-from services.neo4j_service.neo4j_client import Neo4jClient
 
 api_resource = module_api.namespace('Preview', description='Preview API', path='/v1/<file_geid>/preview')
 
@@ -29,15 +29,7 @@ class APIPreview(metaclass=MetaAPI):
 
             data = request.args
             dataset_geid = data.get("dataset_geid")
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.node_query("Dataset", {"global_entity_id": dataset_geid})
-            if not response.get("result"):
-                _logger.error(f"Dataset not found with geid {dataset_geid}")
-                api_response.set_code(EAPIResponseCode.not_found)
-                api_response.set_result("Dataset not found")
-                return api_response.to_dict, api_response.code
-            dataset_node = response.get("result")[0]
-
+            dataset_node = get_dataset_by_id(dataset_geid)
             file_node = get_entity_by_id(file_geid)
 
             if dataset_node["code"] != file_node["container_code"]:
@@ -71,15 +63,7 @@ class APIPreview(metaclass=MetaAPI):
 
             data = request.args
             dataset_geid = data.get("dataset_geid")
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.node_query("Dataset", {"global_entity_id": dataset_geid})
-            if not response.get("result"):
-                _logger.error(f"Dataset not found with geid {dataset_geid}")
-                api_response.set_code(EAPIResponseCode.not_found)
-                api_response.set_result("Dataset not found")
-                return api_response.to_dict, api_response.code
-            dataset_node = response.get("result")[0]
-
+            dataset_node = get_dataset_by_id(dataset_geid)
             file_node = get_entity_by_id(file_geid)
 
             if dataset_node["code"] != file_node["container_code"]:

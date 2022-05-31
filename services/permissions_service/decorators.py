@@ -1,10 +1,10 @@
 from flask_jwt import current_identity
-import requests
-from config import ConfigClass
 from .utils import has_permission, get_project_code_from_request
 from common import LoggerFactory
+from services.dataset import get_dataset_by_id, get_dataset_by_code
 
 _logger = LoggerFactory('permissions').get_logger()
+
 
 def permissions_check(resource, zone, operation):
     def inner(function):
@@ -19,28 +19,20 @@ def permissions_check(resource, zone, operation):
         return wrapper
     return inner
 
+
 # this is temperory function to check the operation
 # on the dataset. Any post/put action will ONLY require the owner
 def dataset_permission():
     def inner(function):
         def wrapper(*args, **kwargs):
-            dateset_geid = kwargs.get("dataset_geid")
-
-            # here we have to find the parent node and delete the relationship
-            query_url = ConfigClass.NEO4J_SERVICE + "nodes/Dataset/query"
-            query_payload = {
-                "global_entity_id": dateset_geid,
-                "creator": current_identity.get("username"),
-            }
-            response = requests.post(query_url, json=query_payload)
-
-            # if not the owner and not the platform admin
-            if len(response.json()) == 0:
+            dataset_id = kwargs.get("dataset_id")
+            dataset = get_dataset_by_id(dataset_id)
+            if dataset["creator"] != current_identity["username"]:
                 return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
-
             return function(*args, **kwargs)
         return wrapper
     return inner
+
 
 # this is temperory function to check the operation
 # on the dataset. Any post/put action will ONLY require the owner
@@ -48,20 +40,9 @@ def dataset_permission_bycode():
     def inner(function):
         def wrapper(*args, **kwargs):
             dataset_code = kwargs.get("dataset_code")
-
-            # here we have to find the parent node and delete the relationship
-            query_url = ConfigClass.NEO4J_SERVICE + "nodes/Dataset/query"
-            query_payload = {
-                "code": dataset_code,
-                "creator": current_identity.get("username"),
-            }
-            response = requests.post(query_url, json=query_payload)
-            # print(response.json())
-
-            # if not the owner and not the platform admin
-            if len(response.json()) == 0:
+            dataset = get_dataset_by_code(dataset_code)
+            if dataset["creator"] != current_identity["username"]:
                 return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
-
             return function(*args, **kwargs)
 
         return wrapper

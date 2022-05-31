@@ -1,4 +1,4 @@
-from flask_restx import Api, Resource, fields
+from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from flask import request
 
@@ -17,20 +17,20 @@ _logger = LoggerFactory('api_schema').get_logger()
 
 class APISchema(metaclass=MetaAPI):
     def api_registry(self):
-        api_resource.add_resource(self.SchemaCreate, '/<dataset_geid>/schema')
-        api_resource.add_resource(self.Schema, '/<dataset_geid>/schema/<schema_geid>')
-        api_resource.add_resource(self.SchemaList, '/<dataset_geid>/schema/list')
+        api_resource.add_resource(self.SchemaCreate, '/<dataset_id>/schema')
+        api_resource.add_resource(self.Schema, '/<dataset_id>/schema/<schema_id>')
+        api_resource.add_resource(self.SchemaList, '/<dataset_id>/schema/list')
 
     class SchemaCreate(Resource):
         @jwt_required()
-        def post(self, dataset_geid):
+        def post(self, dataset_id):
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
 
             try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + f"schema", json=request.get_json())
+                response = requests.post(ConfigClass.DATASET_SERVICE + "schema", json=request.get_json())
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)
@@ -40,16 +40,16 @@ class APISchema(metaclass=MetaAPI):
 
     class Schema(Resource):
         @jwt_required()
-        def put(self, dataset_geid, schema_geid):
+        def put(self, dataset_id, schema_id):
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
 
             payload = request.get_json()
             payload["username"] = current_identity["username"]
             try:
-                response = requests.put(ConfigClass.DATASET_SERVICE + f"schema/{schema_geid}", json=payload)
+                response = requests.put(ConfigClass.DATASET_SERVICE + f"schema/{schema_id}", json=payload)
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)
@@ -58,14 +58,14 @@ class APISchema(metaclass=MetaAPI):
             return response.json(), response.status_code
 
         @jwt_required()
-        def get(self, dataset_geid, schema_geid):
+        def get(self, dataset_id, schema_id):
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
 
             try:
-                response = requests.get(ConfigClass.DATASET_SERVICE + f"schema/{schema_geid}")
+                response = requests.get(ConfigClass.DATASET_SERVICE + f"schema/{schema_id}")
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)
@@ -74,17 +74,17 @@ class APISchema(metaclass=MetaAPI):
             return response.json(), response.status_code
 
         @jwt_required()
-        def delete(self, dataset_geid, schema_geid):
+        def delete(self, dataset_id, schema_id):
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
 
             payload = request.get_json()
             payload["username"] = current_identity["username"]
-            payload["dataset_geid"] = dataset_geid
+            payload["dataset_geid"] = dataset_id
             try:
-                response = requests.delete(ConfigClass.DATASET_SERVICE + f"schema/{schema_geid}", json=payload)
+                response = requests.delete(ConfigClass.DATASET_SERVICE + f"schema/{schema_id}", json=payload)
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)
@@ -94,16 +94,16 @@ class APISchema(metaclass=MetaAPI):
 
     class SchemaList(Resource):
         @jwt_required()
-        def post(self, dataset_geid):
+        def post(self, dataset_id):
             api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_geid)
+            valid, response = check_dataset_permissions(dataset_id)
             if not valid:
                 return response.to_dict, response.code
             payload = request.get_json()
             payload["creator"] = current_identity["username"]
-            payload["dataset_geid"] = dataset_geid
+            payload["dataset_geid"] = dataset_id
             try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + f"schema/list", json=payload)
+                response = requests.post(ConfigClass.DATASET_SERVICE + "schema/list", json=payload)
             except Exception as e:
                 _logger.info(f"Error calling dataset service: {str(e)}")
                 api_response.set_code(EAPIResponseCode.internal_error)

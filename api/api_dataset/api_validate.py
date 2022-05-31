@@ -6,10 +6,10 @@ from common import LoggerFactory
 from models.api_meta_class import MetaAPI
 from config import ConfigClass
 from resources.utils import http_query_node
-import json
 import requests
 from api import module_api
 from services.permissions_service.decorators import permissions_check
+from services.dataset import get_dataset_by_id
 
 _logger = LoggerFactory('api_dataset_validator').get_logger()
 
@@ -19,126 +19,86 @@ api_dataset = module_api.namespace(
 
 class APIValidator(metaclass=MetaAPI):
     def api_registry(self):
-        api_dataset.add_resource(
-            self.BIDSValidator, '/bids-validate')
-        api_dataset.add_resource(
-            self.BIDSResult, '/bids-validate/<dataset_geid>')
+        api_dataset.add_resource(self.BIDSValidator, '/bids-validate')
+        api_dataset.add_resource(self.BIDSResult, '/bids-validate/<dataset_id>')
 
     class BIDSValidator(Resource):
         @jwt_required()
         def post(self):
             _res = APIResponse()
             payload = request.get_json()
-            dataset_geid = payload.get('dataset_geid', None)
-            if not dataset_geid:
+            dataset_id = payload.get('dataset_id', None)
+            if not dataset_id:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "dataset_geid is missing in payload"
+                _res.error_msg = "dataset_id is missing in payload"
                 return _res.to_dict, _res.code
 
-            _logger.info(
-                f'Call API for validating dataset: {dataset_geid}')
+            _logger.info(f'Call API for validating dataset: {dataset_id}')
 
             try:
-                node_res = http_query_node(
-                    'Dataset', {'global_entity_id': dataset_geid})
-                node = node_res.json()
-                if len(node) == 0:
-                    _res.set_code(EAPIResponseCode.not_found)
-                    _res.set_result('Dataset is not exist')
-                    return _res.to_dict, _res.code
-                if node[0]['type'] != 'BIDS':
+                dataset_node = get_dataset_by_id(dataset_id)
+                if dataset_node['type'] != 'BIDS':
                     _res.set_code(EAPIResponseCode.bad_request)
                     _res.set_result('Dataset is not BIDS type')
                     return _res.to_dict, _res.code
 
-                payload = {
-                    'creator': current_identity["username"],
-                    'id': node[0]['id'],
-                }
-                owner_res = http_query_node('Dataset', payload)
-                nodes_owned = owner_res.json()
-
-                if len(nodes_owned) == 0:
+                if dataset_node["creator"] != current_identity["username"]:
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_result("no permission for this dataset")
                     return _res.to_dict, _res.code
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "error when get dataset node in neo4j" + \
-                    str(e)
+                _res.error_msg = f"error when get dataset node in dataset service: {e}"
                 return _res.to_dict, _res.code
 
             try:
                 url = ConfigClass.DATASET_SERVICE + 'dataset/verify/pre'
                 data = {
-                    "dataset_geid": dataset_geid,
+                    "dataset_geid": dataset_id,
                     "type": "bids"
                 }
-                response = requests.post(
-                    url, headers=request.headers, json=data)
+                response = requests.post(url, headers=request.headers, json=data)
                 if response.status_code != 200:
-                    _logger.error(
-                        'Failed to verify dataset in dataset service:   ' + response.text)
+                    _logger.error('Failed to verify dataset in dataset service:   ' + response.text)
                     _res.set_code(EAPIResponseCode.internal_error)
-                    _res.set_result(
-                        'Failed to verify dataset in dataset service:   ' + response.text)
+                    _res.set_result('Failed to verify dataset in dataset service:   ' + response.text)
                     return _res.to_dict, _res.code
-                else:
-                    return response.json()
+                return response.json()
 
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "error when verify dataset in service dataset" + \
-                    str(e)
+                _res.error_msg = f"error when verify dataset in service dataset: {e}"
                 return _res.to_dict, _res.code
 
     class BIDSResult(Resource):
         @jwt_required()
-        def get(self, dataset_geid):
+        def get(self, dataset_id):
             _res = APIResponse()
 
             try:
-                node_res = http_query_node(
-                    'Dataset', {'global_entity_id': dataset_geid})
-                node = node_res.json()
-                if len(node) == 0:
-                    _res.set_code(EAPIResponseCode.bad_request)
-                    _res.set_result('Dataset is not exist')
-                    return _res.to_dict, _res.code
+                dataset_node = get_dataset_by_id(dataset_id)
 
-                payload = {
-                    'creator': current_identity["username"],
-                    'id': node[0]['id'],
-                }
-                node_res = http_query_node('Dataset', payload)
-                node = node_res.json()
-
-                if not node:
+                if dataset_node["creator"] != current_identity["username"]:
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_result("no permission for this dataset")
                     return _res.to_dict, _res.code
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "error when get dataset node in neo4j" + \
-                    str(e)
+                _res.error_msg = f"error when get dataset node in dataset service: {e}"
                 return _res.to_dict, _res.code
 
             try:
-                url = ConfigClass.DATASET_SERVICE + \
-                    'dataset/bids-msg/{}'.format(dataset_geid)
+                url = ConfigClass.DATASET_SERVICE + 'dataset/bids-msg/{}'.format(dataset_id)
                 response = requests.get(url)
                 if response.status_code != 200:
-                    _logger.error(
-                        'Failed to get dataset bids result in dataset service:   ' + response.text)
+                    _logger.error('Failed to get dataset bids result in dataset service:   ' + response.text)
                     _res.set_code(EAPIResponseCode.internal_error)
-                    _res.set_result(
-                        'Failed to get dataset bids result in dataset service:   ' + response.text)
+                    _res.set_result('Failed to get dataset bids result in dataset service:   ' + response.text)
                     return _res.to_dict, _res.code
                 else:
                     return response.json()
 
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "error when get dataset bids result in service dataset" + \
-                    str(e)
+                _res.error_msg = f"error when get dataset bids result in service dataset: {e}"
                 return _res.to_dict, _res.code
