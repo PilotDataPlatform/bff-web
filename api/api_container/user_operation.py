@@ -1,3 +1,4 @@
+import math
 from datetime import datetime
 
 import requests
@@ -174,6 +175,9 @@ class UserContainerQuery(Resource):
                 project["permission"] = "admin"
         results = {
             "results": projects,
-            "role": user_node["role"]
+            "role": user_node["role"],
+            "total": project_result["total"],
+            "page": project_result["page"],
+            "num_of_pages": int(math.ceil(project_result["total"] / payload["page_size"])),
         }
         return results, response.status_code
