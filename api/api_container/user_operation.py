@@ -108,15 +108,15 @@ class UserContainerQuery(Resource):
         data = request.get_json()
 
         name = None
-        if request.args.get("name"):
-            name = "%" + request.args.get("name") + "%"
+        if data.get("name"):
+            name = "%" + data.get("name") + "%"
         code = None
-        if request.args.get("code"):
-            code = "%" + request.args.get("code") + "%"
+        if data.get("code"):
+            code = "%" + data.get("code") + "%"
 
         description = None
-        if request.args.get("description"):
-            code = "%" + request.args.get("description") + "%"
+        if data.get("description"):
+            description = "%" + data.get("description") + "%"
 
         payload = {
             "page": data.get("page", 0),
@@ -180,4 +180,4 @@ class UserContainerQuery(Resource):
             "page": project_result["page"],
             "num_of_pages": int(math.ceil(project_result["total"] / payload["page_size"])),
         }
-        return results, response.status_code
+        return results, EAPIResponseCode.success.value
