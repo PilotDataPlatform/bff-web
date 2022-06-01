@@ -45,25 +45,23 @@ class FileActionTasks(Resource):
 class FileActions(Resource):
     @jwt_required()
     def post(self):
-        data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/"
+        data_actions_utility_url = 'http://127.0.0.1:5063/v1/' + "files/actions/"
         headers = request.headers
         request_body = request.get_json()
         validate_request_params(request_body)
         operation = request_body.get("operation", None)
-        project_geid = request_body.get("project_geid", None)
+        project_code = request_body.get("project_code", None)
         targets = request_body["payload"]["targets"]
         # validate request
         session_id = headers.get("Session-Id", None)
         if not session_id:
             return "Header Session-ID required", EAPIResponseCode.bad_request.value
 
-        project_info = get_project_or_error(project_geid)
-
-        if not has_permission(project_info["code"], 'file', '*', operation.lower()):
+        if not has_permission(project_code, 'file', '*', operation.lower()):
             return "Permission denied", EAPIResponseCode.forbidden.value
 
         if operation == 'delete':
-            validate_delete_permissions(targets, project_info["code"])
+            validate_delete_permissions(targets, project_code)
 
         # request action utility API
         payload = request_body
@@ -75,69 +73,6 @@ class FileActions(Resource):
             return action_util_res.text, action_util_res.status_code
 
 
-class FileRepeatedCheck(Resource):
-    @jwt_required()
-    def post(self):
-        data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/validate/repeat-check"
-        headers = request.headers
-        request_body = request.get_json()
-        validate_request_params(request_body)
-        operation = request_body.get("operation", None)
-        project_geid = request_body.get("project_geid", None)
-        targets = request_body["payload"]["targets"]
-        session_id = headers.get("Session-ID", None)
-        if not session_id:
-            return "Header Session-ID required", EAPIResponseCode.bad_request.value
-
-        # validate project
-        project_info = get_project_or_error(project_geid)
-
-        if not has_permission(project_info["code"], 'file', '*', operation.lower()):
-            return "Permission denied", EAPIResponseCode.forbidden.value
-
-        if operation == "delete":
-            validate_delete_permissions(targets, project_info["code"])
-
-        # request action utility API
-        payload = request_body
-        payload['session_id'] = session_id
-        action_util_res = requests.post(data_actions_utility_url, json=payload)
-        if action_util_res.status_code == 200:
-            return action_util_res.json(), action_util_res.status_code
-        else:
-            return action_util_res.text, action_util_res.status_code
-
-
-class FileValidation(Resource):
-    @jwt_required()
-    def post(self):
-        try:
-            data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/validate"
-            request_body = request.get_json()
-            validate_request_params(request_body)
-            operation = request_body.get("operation", None)
-            project_geid = request_body.get("project_geid", None)
-            targets = request_body["payload"]["targets"]
-
-            project_info = get_project_or_error(project_geid)
-            _logger.info('file validation api: project info' + str(project_info))
-
-            if not has_permission(project_info["code"], 'file', '*', operation.lower()):
-                return "Permission denied", EAPIResponseCode.forbidden.value
-
-            if operation == 'delete':
-                validate_delete_permissions(targets, project_info["code"])
-
-            # request action utility API
-            payload = request_body
-            _logger.error('file validation api call utility service: ' + str(payload))
-            action_util_res = requests.post(data_actions_utility_url, json=payload)
-            return action_util_res.json(), action_util_res.status_code
-        except Exception as e:
-            _logger.error('file validation error: ' + str(e))
-            return "file validation error: " + str(e), EAPIResponseCode.internal_error.value
-
-
 def validate_request_params(request_body: dict):
     if not request_body.get("payload"):
         raise APIException(error_msg="parameter 'payload' required", status_code=EAPIResponseCode.bad_request.value)
@@ -146,17 +81,12 @@ def validate_request_params(request_body: dict):
     if not targets:
         raise APIException(error_msg="targets required", status_code=EAPIResponseCode.bad_request.value)
     if type(targets) != list:
-        raise APIException(error_msg="Invalid targets, must be an object list", status_code=EAPIResponseCode.bad_request.value)
+        raise APIException(error_msg="Invalid targets, must be an object list",
+                           status_code=EAPIResponseCode.bad_request.value)
     if not request_body.get("operation"):
         raise APIException(error_msg="operation required", status_code=EAPIResponseCode.bad_request.value)
-    if not request_body.get("project_geid"):
-        raise APIException(error_msg="project_geid required", status_code=EAPIResponseCode.bad_request.value)
-
-
-def get_project_or_error(project_geid: str) -> dict:
-    project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-    project = project_client.get(id=project_geid)
-    return project.json()
+    if not request_body.get("project_code"):
+        raise APIException(error_msg="project_code required", status_code=EAPIResponseCode.bad_request.value)
 
 
 def validate_delete_permissions(targets: list, project_code):
