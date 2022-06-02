@@ -45,7 +45,7 @@ class FileActionTasks(Resource):
 class FileActions(Resource):
     @jwt_required()
     def post(self):
-        data_actions_utility_url = 'http://127.0.0.1:5063/v1/' + "files/actions/"
+        data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/"
         headers = request.headers
         request_body = request.get_json()
         validate_request_params(request_body)
