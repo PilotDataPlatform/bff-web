@@ -12,17 +12,26 @@ api_ns_dataset_schema_template_proxy = module_api.namespace('DatasetSchemaTempla
 
 class APIDatasetSchemaTemplateProxy(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_schema_template_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/schemaTPL/<template_geid>')
-        api_ns_dataset_schema_template_proxy.add_resource(self.SchemaTemplateCreate, '/dataset/<dataset_id>/schemaTPL')
-        api_ns_dataset_schema_template_proxy.add_resource(self.SchemaTemplatePostQuery, '/dataset/<dataset_id>/schemaTPL/list')
-        api_ns_dataset_schema_template_proxy.add_resource(self.SchemaTemplateDefaultQuery, '/dataset/schemaTPL/default/list')
-        api_ns_dataset_schema_template_proxy.add_resource(self.SchemaTemplateDefaultGet, '/dataset/schemaTPL/default/<template_geid>')
+        api_ns_dataset_schema_template_proxy.add_resource(
+            self.Restful, '/dataset/<dataset_id>/schemaTPL/<template_geid>'
+        )
+        api_ns_dataset_schema_template_proxy.add_resource(
+            self.SchemaTemplateCreate, '/dataset/<dataset_id>/schemaTPL'
+        )
+        api_ns_dataset_schema_template_proxy.add_resource(
+            self.SchemaTemplatePostQuery, '/dataset/<dataset_id>/schemaTPL/list'
+        )
+        api_ns_dataset_schema_template_proxy.add_resource(
+            self.SchemaTemplateDefaultQuery, '/dataset/schemaTPL/default/list'
+        )
+        api_ns_dataset_schema_template_proxy.add_resource(
+            self.SchemaTemplateDefaultGet, '/dataset/schemaTPL/default/<template_geid>'
+        )
 
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
         def get(self, dataset_id, template_geid):
-
             url = ConfigClass.DATASET_SERVICE + "dataset/{}/schemaTPL/{}".format(dataset_id, template_geid)
             respon = requests.get(url, params=request.args, headers=request.headers)
             return respon.json(), respon.status_code
