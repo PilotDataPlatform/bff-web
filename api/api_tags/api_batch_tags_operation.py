@@ -28,8 +28,7 @@ class APIBatchTagsV2(metaclass=MetaAPI):
             url = ConfigClass.DATA_UTILITY_SERVICE_v2 + 'entity/tags'
             project_code = get_project_code_from_request({})
             for entity in data.get("entity"):
-                # Get the File or Folder node from neo4j
-                entity_node = get_entity_by_id(entity)
+                entity = get_entity_by_id(entity)
                 root_folder = entity["parent_path"].split(".")[0]
 
                 if entity["zone"] == 1:
