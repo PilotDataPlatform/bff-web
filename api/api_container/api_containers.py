@@ -41,7 +41,7 @@ class Containers(Resource):
             "description": description,
         }
         if current_identity["role"] != "admin":
-            payload["discoverable"] = True
+            payload["is_discoverable"] = True
 
         if "create_time_start" in request.args and "create_time_end" in request.args:
             payload["created_at_start"] = request.args.get("create_time_start")
