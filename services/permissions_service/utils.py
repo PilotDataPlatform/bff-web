@@ -73,8 +73,14 @@ def get_project_code_from_request(kwargs):
     if "project_geid" in data:
         project = project_client.get(id=data["project_geid"])
         return project.code
+    if "project_id" in data:
+        project = project_client.get(id=data["project_id"])
+        return project.code
     if "project_code" in kwargs:
         return kwargs["project_code"]
     if "project_geid" in kwargs:
         project = project_client.get(id=kwargs["project_geid"])
+        return project.code
+    if "project_id" in kwargs:
+        project = project_client.get(id=kwargs["project_id"])
         return project.code
