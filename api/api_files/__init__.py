@@ -1,6 +1,6 @@
 # from ..upload_ops import CheckUploadStateRestful
 from .vfolder_ops import VirtualFolderFiles, VirtualFolder, VirtualFolderInfo
-from .file_ops import FileActions, FileActionTasks, FileValidation, FileRepeatedCheck
+from .file_ops import FileActions, FileActionTasks
 from .file_search import FileSearch
 from .meta import FileMeta, FileDetailBulk
 from .file_stats import FileStatistics
@@ -14,8 +14,6 @@ nfs_entity_ns.add_resource(FileActionTasks, '/actions/tasks')
 nfs_entity_ns.add_resource(FileMeta, '/meta')
 nfs_entity_ns.add_resource(FileDetailBulk, '/bulk/detail')
 nfs_entity_ns.add_resource(FileStatistics, '/project/<project_geid>/files/statistics')
-nfs_entity_ns.add_resource(FileValidation, '/validation')
-nfs_entity_ns.add_resource(FileRepeatedCheck, '/repeatcheck')
 
 
 nfs_upload_ns = Namespace('Data Upload', description='Upload data', path='/v1/upload')
