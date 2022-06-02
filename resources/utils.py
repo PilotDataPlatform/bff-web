@@ -52,18 +52,6 @@ def add_user_to_ad_group(user_email, project_code, logger):
     return res.json().get("entry")
 
 
-######################################################### DATASET API #################################################
-
-def retreive_property(token, label):
-    url = ConfigClass.NEO4J_SERVICE + "nodes/%s/properties" % label
-    headers = {
-        'Authorization': token
-    }
-    res = requests.get(
-        url=url,
-        headers=headers,
-    )
-    return json.loads(res.text)
 
 ################################################### Simple Helpers ########################################
 

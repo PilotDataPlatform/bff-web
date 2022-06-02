@@ -2,7 +2,7 @@ from flask import request
 from flask_restx import Resource
 from flask_jwt import jwt_required, current_identity
 from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
+from common import LoggerFactory, ProjectClientSync
 from config import ConfigClass
 from api import module_api
 from models.api_meta_class import MetaAPI
@@ -26,7 +26,9 @@ class APITagsV2(metaclass=MetaAPI):
             _res = APIResponse()
             data = request.get_json()
             taglist = data.get("tags", [])
-            project_code = http_query_project_code(geid=entity_geid, entity=entity_type)
+            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = project_client.get(id=entity_geid)
+            project_code = project.code
             tags_url = ConfigClass.DATA_UTILITY_SERVICE_v2 + f'{entity_type}/{entity_geid}/tags'
             if not isinstance(taglist, list) or not project_code:
                 _logger.error("Tags, project_code are required")
@@ -113,26 +115,3 @@ class APITagsV2(metaclass=MetaAPI):
                 return _res.to_dict, _res.code
 
 
-def http_query_project_code(geid, entity):
-    _res = APIResponse()
-    try:
-
-        payload = {
-            "global_entity_id": geid
-        }
-        node_query_url = ConfigClass.NEO4J_SERVICE + f"nodes/{entity}/query"
-        response = requests.post(node_query_url, json=payload)
-        if response.status_code != 200:
-            _logger.error('Failed to query project from neo4j service:   ' + response.text)
-            _res.set_code(EAPIResponseCode.internal_error)
-            _res.set_result("Failed to query project from neo4j service")
-            return _res.to_dict, _res.code
-        else:
-            response = response.json()
-            project_code = response[0]["project_code"]
-            return project_code
-    except Exception as e:
-        _logger.error('Failed to query project from neo4j service:   ' + str(e))
-        _res.set_code(EAPIResponseCode.internal_error)
-        _res.set_result("Failed to query project from neo4j service")
-        return _res.to_dict, _res.code

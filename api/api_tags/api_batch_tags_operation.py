@@ -7,7 +7,6 @@ from config import ConfigClass
 from api import module_api
 from models.api_meta_class import MetaAPI
 from services.permissions_service.utils import has_permission, get_project_code_from_request, get_project_role
-from services.neo4j_service.neo4j_client import Neo4jClient
 from services.meta import get_entity_by_id
 import requests
 

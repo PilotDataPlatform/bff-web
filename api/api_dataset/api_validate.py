@@ -5,7 +5,6 @@ from models.api_response import APIResponse, EAPIResponseCode
 from common import LoggerFactory
 from models.api_meta_class import MetaAPI
 from config import ConfigClass
-from resources.utils import http_query_node
 import requests
 from api import module_api
 from services.permissions_service.decorators import permissions_check
