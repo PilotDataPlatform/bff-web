@@ -1,21 +1,25 @@
 import requests
-
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
 from common import LoggerFactory
+from flask import request
+from flask_jwt import current_identity
+from flask_jwt import jwt_required
+from flask_restx import Resource
 
 from api import module_api
 from config import ConfigClass
 from models.api_meta_class import MetaAPI
-from models.api_response import APIResponse, EAPIResponseCode
+from models.api_response import APIResponse
+from models.api_response import EAPIResponseCode
 from resources.error_handler import APIException
-from resources.swagger_modules import data_manifests, data_manifests_return
+from resources.swagger_modules import data_manifests
+from resources.swagger_modules import data_manifests_return
 from services.meta import get_entity_by_id
 from services.permissions_service.decorators import permissions_check
-from services.permissions_service.utils import get_project_role, has_permission
+from services.permissions_service.utils import get_project_role
+from services.permissions_service.utils import has_permission
 
-from .utils import has_permissions, is_greenroom
+from .utils import has_permissions
+from .utils import is_greenroom
 
 api_ns_data_manifests = module_api.namespace(
     'Attribute Templates Restful', description='For data attribute templates feature', path='/v1')
@@ -47,9 +51,7 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         @permissions_check('file_attribute_template', '*', 'view')
         def get(self):
-            '''
-            List attribute templates by project_code
-            '''
+            """List attribute templates by project_code."""
             try:
                 response = requests.get(
                     ConfigClass.METADATA_SERVICE + 'template/', params=request.args)
@@ -65,9 +67,7 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         @permissions_check('file_attribute_template', '*', 'create')
         def post(self):
-            '''
-            Create a new attribute template
-            '''
+            """Create a new attribute template."""
             try:
                 response = requests.post(
                     ConfigClass.METADATA_SERVICE + 'template/', json=request.get_json())
@@ -83,9 +83,7 @@ class APIDataManifest(metaclass=MetaAPI):
     class RestfulManifest(Resource):
         @jwt_required()
         def get(self, manifest_id):
-            '''
-            Get an attribute template by id
-            '''
+            """Get an attribute template by id."""
             my_res = APIResponse()
             try:
                 response = requests.get(
@@ -109,9 +107,7 @@ class APIDataManifest(metaclass=MetaAPI):
 
         @jwt_required()
         def put(self, manifest_id):
-            '''
-            Update attributes or name of template by id
-            '''
+            """Update attributes or name of template by id."""
             my_res = APIResponse()
             data = request.get_json()
             project_code = data.get('project_code')
@@ -134,7 +130,7 @@ class APIDataManifest(metaclass=MetaAPI):
                     result = {'id': template['id'], 'name': template['name'], 'project_code': template['project_code']}
                     data['attributes'] = template['attributes']
                 else:
-                    result = ""
+                    result = ''
                     existing_attr = template['attributes']
                     data['attributes'] = data['attributes'] + existing_attr
 
@@ -154,9 +150,7 @@ class APIDataManifest(metaclass=MetaAPI):
 
         @jwt_required()
         def delete(self, manifest_id):
-            '''
-            Delete an attribute template
-            '''
+            """Delete an attribute template."""
             my_res = APIResponse()
             data = request.get_json()
             project_code = data.get('project_code')
@@ -205,9 +199,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
     class FileAttributes(Resource):
-        '''
-        Update attributes of template attached to a file
-        '''
+        """Update attributes of template attached to a file."""
 
         @jwt_required()
         def put(self, file_geid):
@@ -268,9 +260,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
     class ImportManifest(Resource):
-        '''
-        Import attribute template from portal as JSON
-        '''
+        """Import attribute template from portal as JSON."""
 
         @jwt_required()
         @permissions_check('file_attribute_template', '*', 'import')
@@ -297,9 +287,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
     class ExportManifest(Resource):
-        '''
-        Export attribute template from portal as JSON
-        '''
+        """Export attribute template from portal as JSON."""
 
         @jwt_required()
         def get(self):
@@ -307,7 +295,7 @@ class APIDataManifest(metaclass=MetaAPI):
             template_id = request.args.get('manifest_id')
             if not template_id:
                 api_response.set_code(EAPIResponseCode.bad_request)
-                api_response.set_result(f'Missing required field template_id')
+                api_response.set_result('Missing required field template_id')
                 return api_response.to_dict, api_response.code
 
             try:
@@ -335,9 +323,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
     class FileManifestQuery(Resource):
-        '''
-        List template attributes for files
-        '''
+        """List template attributes for files."""
 
         @jwt_required()
         def post(self):
@@ -345,7 +331,7 @@ class APIDataManifest(metaclass=MetaAPI):
             data = request.get_json()
             if 'geid_list' not in data:
                 api_response.set_code(EAPIResponseCode.bad_request)
-                api_response.set_result(f'Missing required field: geid_list')
+                api_response.set_result('Missing required field: geid_list')
                 return api_response.to_dict, api_response.code
 
             geid_list = data.get('geid_list')
@@ -359,7 +345,7 @@ class APIDataManifest(metaclass=MetaAPI):
                         template_id = list(entity['extended']['extra']['attributes'].keys())[0]
                         if not has_permissions(template_id, entity) and not lineage_view:
                             api_response.set_code(EAPIResponseCode.forbidden)
-                            api_response.set_result(f'Permission denied')
+                            api_response.set_result('Permission denied')
                             return api_response.to_dict, api_response.code
                         if is_greenroom(entity):
                             zone = 'greenroom'
@@ -380,7 +366,7 @@ class APIDataManifest(metaclass=MetaAPI):
                             template_info = response.json()['result']
                             template_name = template_info['name']
                             for attr, value in entity_attributes[template_id].items():
-                                attr_info = next(item for item in template_info['attributes'] if item["name"] == attr)
+                                attr_info = next(item for item in template_info['attributes'] if item['name'] == attr)
                                 attribute = {
                                     'id': extended_id,
                                     'name': attr,
@@ -404,9 +390,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 return error_msg, 500
 
     class AttachAttributes(Resource):
-        """
-        Attach attributes to files or folders (bequeath)
-        """
+        """Attach attributes to files or folders (bequeath)"""
 
         @jwt_required()
         def post(self):
@@ -414,7 +398,7 @@ class APIDataManifest(metaclass=MetaAPI):
             required_fields = ['manifest_id', 'item_ids', 'attributes', 'project_code']
             data = request.get_json()
             payload = {'items': []}
-            responses = {"result": []}
+            responses = {'result': []}
             # Check required fields
             for field in required_fields:
                 if field not in data:
@@ -430,7 +414,7 @@ class APIDataManifest(metaclass=MetaAPI):
                     project_role = get_project_role(project_code)
                     if not project_role:
                         api_response.set_code(EAPIResponseCode.forbidden)
-                        api_response.set_result(f'User does not have access to this project')
+                        api_response.set_result('User does not have access to this project')
                         return api_response.to_dict, api_response.code
 
                     for item in item_ids:
@@ -440,12 +424,12 @@ class APIDataManifest(metaclass=MetaAPI):
                         if project_role == 'collaborator':
                             if zone == 'greenroom' and root_folder != current_identity['username']:
                                 api_response.set_code(EAPIResponseCode.forbidden)
-                                api_response.set_result(f'Permission denied')
+                                api_response.set_result('Permission denied')
                                 return api_response.to_dict, api_response.code
                         elif project_role == 'contributor':
                             if root_folder != current_identity['username']:
                                 api_response.set_code(EAPIResponseCode.forbidden)
-                                api_response.set_result(f'Permission denied')
+                                api_response.set_result('Permission denied')
                                 return api_response.to_dict, api_response.code
                         items.append(entity)
                 else:
@@ -501,8 +485,8 @@ class APIDataManifest(metaclass=MetaAPI):
                         api_response.set_result(response.text)
                         return api_response.to_dict, api_response.code
                     for item in response.json()['result']:
-                        responses['result'].append({'name': item['name'], "geid": item['id'],
-                                                    "operation_status": "SUCCEED"})
+                        responses['result'].append({'name': item['name'], 'geid': item['id'],
+                                                    'operation_status': 'SUCCEED'})
 
                 responses['total'] = len(responses['result'])
                 api_response.set_result(responses)
