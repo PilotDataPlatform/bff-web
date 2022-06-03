@@ -149,10 +149,18 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         def delete(self, manifest_id):
             """Delete an attribute template."""
+            import pdb
+            pdb.set_trace()
             my_res = APIResponse()
-            data = request.get_json()
-            project_code = data.get('project_code')
+            response = requests.get(
+                ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
+            res = response.json()['result']
+            if not res:
+                my_res.set_code(EAPIResponseCode.not_found)
+                my_res.set_error_msg('Attribute template not found')
+                return my_res.to_dict, my_res.code
 
+            project_code = res['project_code']
             # Permissions check
             if not has_permission(project_code, 'file_attribute_template', '*', 'delete'):
                 my_res.set_code(EAPIResponseCode.forbidden)
