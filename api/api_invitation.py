@@ -43,10 +43,10 @@ class APIInvitation(metaclass=MetaAPI):
                 project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
                 project = project_client.get(id=relation_data.get('project_geid'))
 
-            if not check_invite_permissions(project.json(), current_identity):
-                my_res.set_result('Permission denied')
-                my_res.set_code(EAPIResponseCode.forbidden)
-                return my_res.to_dict, my_res.code
+                if not check_invite_permissions(project.json(), current_identity):
+                    my_res.set_result('Permission denied')
+                    my_res.set_code(EAPIResponseCode.forbidden)
+                    return my_res.to_dict, my_res.code
 
             try:
                 post_json['invited_by'] = current_identity['username']
