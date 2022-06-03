@@ -149,8 +149,6 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         def delete(self, manifest_id):
             """Delete an attribute template."""
-            import pdb
-            pdb.set_trace()
             my_res = APIResponse()
             response = requests.get(
                 ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
