@@ -1,13 +1,15 @@
-from flask_restx import Resource
-from flask_jwt import jwt_required
-from flask import request
-
+import requests
 from common import LoggerFactory
-from models.api_meta_class import MetaAPI
+from flask import request
+from flask_jwt import jwt_required
+from flask_restx import Resource
+
 from api import module_api
 from config import ConfigClass
-from models.api_response import APIResponse, EAPIResponseCode
-import requests
+from models.api_meta_class import MetaAPI
+from models.api_response import APIResponse
+from models.api_response import EAPIResponseCode
+
 from .utils import check_dataset_permissions
 
 api_resource = module_api.namespace('DatasetProxy', description='Versions API', path='/v1/dataset/')
@@ -31,11 +33,13 @@ class APIVersions(metaclass=MetaAPI):
                 return response.to_dict, response.code
 
             try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + f"dataset/{dataset_id}/publish", json=request.get_json())
+                response = requests.post(
+                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish', json=request.get_json()
+                )
             except Exception as e:
-                _logger.info(f"Error calling dataset service: {str(e)}")
+                _logger.info(f'Error calling dataset service: {str(e)}')
                 api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f"Error calling dataset service: {str(e)}")
+                api_response.set_result(f'Error calling dataset service: {str(e)}')
                 return api_response.to_dict, api_response.code
             return response.json(), response.status_code
 
@@ -48,11 +52,13 @@ class APIVersions(metaclass=MetaAPI):
                 return response.to_dict, response.code
 
             try:
-                response = requests.get(ConfigClass.DATASET_SERVICE + f"dataset/{dataset_id}/publish/status", params=request.args)
+                response = requests.get(
+                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish/status', params=request.args
+                )
             except Exception as e:
-                _logger.info(f"Error calling dataset service: {str(e)}")
+                _logger.info(f'Error calling dataset service: {str(e)}')
                 api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f"Error calling dataset service: {str(e)}")
+                api_response.set_result(f'Error calling dataset service: {str(e)}')
                 return api_response.to_dict, api_response.code
             return response.json(), response.status_code
 
@@ -65,12 +71,15 @@ class APIVersions(metaclass=MetaAPI):
                 return response.to_dict, response.code
 
             try:
-                response = requests.get(ConfigClass.DATASET_SERVICE + f"dataset/{dataset_id}/download/pre", \
-                    params=request.args, headers=request.headers)
+                response = requests.get(
+                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/download/pre',
+                    params=request.args,
+                    headers=request.headers
+                )
             except Exception as e:
-                _logger.info(f"Error calling dataset service: {str(e)}")
+                _logger.info(f'Error calling dataset service: {str(e)}')
                 api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f"Error calling dataset service: {str(e)}")
+                api_response.set_result(f'Error calling dataset service: {str(e)}')
                 return api_response.to_dict, api_response.code
             return response.json(), response.status_code
 
@@ -84,12 +93,12 @@ class APIVersions(metaclass=MetaAPI):
 
             try:
                 response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f"dataset/{dataset_id}/versions",
+                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/versions',
                     params=request.args
                 )
             except Exception as e:
-                _logger.info(f"Error calling dataset service: {str(e)}")
+                _logger.info(f'Error calling dataset service: {str(e)}')
                 api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f"Error calling dataset service: {str(e)}")
+                api_response.set_result(f'Error calling dataset service: {str(e)}')
                 return api_response.to_dict, api_response.code
             return response.json(), response.status_code

@@ -1,13 +1,15 @@
-from flask import request
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from models.api_meta_class import MetaAPI
-from config import ConfigClass
 import requests
+from common import LoggerFactory
+from flask import request
+from flask_jwt import current_identity
+from flask_jwt import jwt_required
+from flask_restx import Resource
+
 from api import module_api
-from services.permissions_service.decorators import permissions_check
+from config import ConfigClass
+from models.api_meta_class import MetaAPI
+from models.api_response import APIResponse
+from models.api_response import EAPIResponseCode
 from services.dataset import get_dataset_by_id
 
 _logger = LoggerFactory('api_dataset_validator').get_logger()
@@ -29,7 +31,7 @@ class APIValidator(metaclass=MetaAPI):
             dataset_id = payload.get('dataset_id', None)
             if not dataset_id:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = "dataset_id is missing in payload"
+                _res.error_msg = 'dataset_id is missing in payload'
                 return _res.to_dict, _res.code
 
             _logger.info(f'Call API for validating dataset: {dataset_id}')
@@ -41,20 +43,20 @@ class APIValidator(metaclass=MetaAPI):
                     _res.set_result('Dataset is not BIDS type')
                     return _res.to_dict, _res.code
 
-                if dataset_node["creator"] != current_identity["username"]:
+                if dataset_node['creator'] != current_identity['username']:
                     _res.set_code(EAPIResponseCode.forbidden)
-                    _res.set_result("no permission for this dataset")
+                    _res.set_result('no permission for this dataset')
                     return _res.to_dict, _res.code
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = f"error when get dataset node in dataset service: {e}"
+                _res.error_msg = f'error when get dataset node in dataset service: {e}'
                 return _res.to_dict, _res.code
 
             try:
                 url = ConfigClass.DATASET_SERVICE + 'dataset/verify/pre'
                 data = {
-                    "dataset_geid": dataset_id,
-                    "type": "bids"
+                    'dataset_geid': dataset_id,
+                    'type': 'bids'
                 }
                 response = requests.post(url, headers=request.headers, json=data)
                 if response.status_code != 200:
@@ -66,7 +68,7 @@ class APIValidator(metaclass=MetaAPI):
 
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = f"error when verify dataset in service dataset: {e}"
+                _res.error_msg = f'error when verify dataset in service dataset: {e}'
                 return _res.to_dict, _res.code
 
     class BIDSResult(Resource):
@@ -77,13 +79,13 @@ class APIValidator(metaclass=MetaAPI):
             try:
                 dataset_node = get_dataset_by_id(dataset_id)
 
-                if dataset_node["creator"] != current_identity["username"]:
+                if dataset_node['creator'] != current_identity['username']:
                     _res.set_code(EAPIResponseCode.forbidden)
-                    _res.set_result("no permission for this dataset")
+                    _res.set_result('no permission for this dataset')
                     return _res.to_dict, _res.code
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = f"error when get dataset node in dataset service: {e}"
+                _res.error_msg = f'error when get dataset node in dataset service: {e}'
                 return _res.to_dict, _res.code
 
             try:
@@ -99,5 +101,5 @@ class APIValidator(metaclass=MetaAPI):
 
             except Exception as e:
                 _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = f"error when get dataset bids result in service dataset: {e}"
+                _res.error_msg = f'error when get dataset bids result in service dataset: {e}'
                 return _res.to_dict, _res.code
