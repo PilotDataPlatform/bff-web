@@ -90,13 +90,15 @@ class APIDataManifest(metaclass=MetaAPI):
             try:
                 response = requests.get(
                     ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
-                res = response.json()['result']
+                res = response.json()
                 if not res:
                     my_res.set_code(EAPIResponseCode.not_found)
                     my_res.set_error_msg('Attribute template not found')
                     return my_res.to_dict, my_res.code
 
-                return response.json(), response.status_code
+                for attr in res['result']['attributes']:
+                    attr['manifest_id'] = res['result']['id']
+                return res, response.status_code
             except Exception as e:
                 _logger.error(
                     f'Error when calling metadata service: {str(e)}')
@@ -108,12 +110,11 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         def put(self, manifest_id):
             '''
-            Update attributes of template by id
+            Update attributes or name of template by id
             '''
             my_res = APIResponse()
             data = request.get_json()
             project_code = data.get('project_code')
-
             # Permissions check
             if not has_permission(project_code, 'file_attribute_template', '*', 'update'):
                 my_res.set_code(EAPIResponseCode.forbidden)
@@ -121,10 +122,28 @@ class APIDataManifest(metaclass=MetaAPI):
                 return my_res.to_dict, my_res.code
 
             try:
+                response = requests.get(
+                    ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
+                template = response.json()['result']
+                if not template:
+                    my_res.set_code(EAPIResponseCode.not_found)
+                    my_res.set_error_msg('Attribute template not found')
+                    return my_res.to_dict, my_res.code
+
+                if 'attributes' not in data:
+                    result = {'id': template['id'], 'name': template['name'], 'project_code': template['project_code']}
+                    data['attributes'] = template['attributes']
+                else:
+                    result = ""
+                    existing_attr = template['attributes']
+                    data['attributes'] = data['attributes'] + existing_attr
+
                 params = {'id': manifest_id}
                 response = requests.put(
                     ConfigClass.METADATA_SERVICE + 'template/', params=params, json=data)
-                return response.json(), response.status_code
+                res = response.json()
+                res['result'] = result
+                return res, response.status_code
             except Exception as e:
                 _logger.error(
                     f'Error when calling metadata service: {str(e)}')
@@ -149,9 +168,34 @@ class APIDataManifest(metaclass=MetaAPI):
                 return my_res.to_dict, my_res.code
 
             try:
+                # check if template attached to items
+                for zone in [0, 1]:
+                    for archived in [True, False]:
+                        params = {'container_code': project_code, 'zone': zone, 'recursive': True, 'archived': archived,
+                                  'type': 'file'}
+                        response = requests.get(ConfigClass.METADATA_SERVICE + 'items/search/', params=params)
+                        if response.status_code != 200:
+                            my_res.set_code(EAPIResponseCode.internal_error)
+                            my_res.set_error_msg('Failed to search for items')
+                            return my_res.to_dict, my_res.code
+                        else:
+                            items = response.json()['result']
+                            for item in items:
+                                if manifest_id in item['extended']['extra']['attributes']:
+                                    my_res.set_code(EAPIResponseCode.forbidden)
+                                    my_res.set_result('Cant delete manifest attached to files')
+                                    return my_res.to_dict, my_res.code
+
                 params = {'id': manifest_id}
                 response = requests.delete(ConfigClass.METADATA_SERVICE + 'template/', params=params)
-                return response.json(), response.status_code
+                if response.status_code != 200:
+                    my_res.set_code(EAPIResponseCode.internal_error)
+                    my_res.set_error_msg('Failed to delete attribute template not found')
+                    return my_res.to_dict, my_res.code
+
+                my_res.set_code(EAPIResponseCode.success)
+                my_res.set_result('success')
+                return my_res.to_dict, my_res.code
             except Exception as e:
                 _logger.error(
                     f'Error when calling metadata service: {str(e)}')
@@ -168,7 +212,6 @@ class APIDataManifest(metaclass=MetaAPI):
         @jwt_required()
         def put(self, file_geid):
             api_response = APIResponse()
-
             entity = get_entity_by_id(file_geid)
             if entity['extended']['extra'].get('attributes'):
                 template_id = list(entity['extended']['extra']['attributes'].keys())[0]
@@ -196,19 +239,26 @@ class APIDataManifest(metaclass=MetaAPI):
             try:
                 params = {'id': entity['id']}
                 attributes_update = request.get_json()
-
                 payload = {
                     'parent': entity['parent'],
                     'parent_path': entity['parent_path'],
                     'type': 'file',
+                    'tags': entity['extended']['extra']['tags'],
+                    'system_tags': entity['extended']['extra']['system_tags'],
                     'attribute_template_id': template_id,
                     'attributes': attributes_update
 
                 }
                 response = requests.put(
                     ConfigClass.METADATA_SERVICE + 'item/', params=params, json=payload)
+                res = response.json()
+                res['result']['zone'] = zone
+                res['result'].pop('extended')
+                res['result']['manifest_id'] = template_id
+                res['result'] = {**res['result'],
+                                 **{f'attr_{attr}': attributes_update[attr] for attr in attributes_update}}
 
-                return response.json(), response.status_code
+                return res, response.status_code
             except Exception as e:
                 _logger.error(
                     f'Error when calling metadata service: {str(e)}')
@@ -227,6 +277,7 @@ class APIDataManifest(metaclass=MetaAPI):
         def post(self):
             data = request.get_json()
             try:
+
                 payload = {
                     'name': data['name'],
                     'project_code': data['project_code'],
@@ -363,19 +414,17 @@ class APIDataManifest(metaclass=MetaAPI):
             required_fields = ['manifest_id', 'item_ids', 'attributes', 'project_code']
             data = request.get_json()
             payload = {'items': []}
-            file_ids = []
             responses = {"result": []}
-
             # Check required fields
             for field in required_fields:
                 if field not in data:
                     api_response.set_code(EAPIResponseCode.bad_request)
                     api_response.set_result(f'Missing required field: {field}')
                     return api_response.to_dict, api_response.code
-
             item_ids = data.get('item_ids')
             project_code = data.get('project_code')
             items = []
+            updated_items = []
             try:
                 if current_identity['role'] != 'admin':
                     project_role = get_project_role(project_code)
@@ -399,32 +448,50 @@ class APIDataManifest(metaclass=MetaAPI):
                                 api_response.set_result(f'Permission denied')
                                 return api_response.to_dict, api_response.code
                         items.append(entity)
-
+                else:
+                    for item in item_ids:
+                        entity = get_entity_by_id(item)
+                        items.append(entity)
                 for item in items:
                     if item['type'] == 'folder':
-                        params = {'id': item['id']}
-                        update = {'attribute_template_id': data['manifest_id'], 'attributes': data['attributes']}
-                        response = requests.put(
-                            ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', params=params, json=update)
+                        parent_path = item['parent_path']
+                        name = item['name']
+                        # get all items in folder recursively:
+                        params = {'container_code': project_code, 'zone': item['zone'], 'recursive': True,
+                                  'archived': False,
+                                  'type': 'file', 'owner': item['owner'], 'parent_path': f'{parent_path}.{name}'}
+                        response = requests.get(ConfigClass.METADATA_SERVICE + 'items/search/', params=params)
                         if response.status_code != 200:
-                            _logger.error('Attaching attributes failed: {}'.format(response.text))
-                            api_response.set_code(response.status_code)
-                            api_response.set_result(response.text)
+                            api_response.set_code(EAPIResponseCode.internal_error)
+                            api_response.set_error_msg('Failed to search for items')
                             return api_response.to_dict, api_response.code
-                        for child in response.json()['result']:
-                            responses['result'].append({'name': child['name'], "geid": child['id'],
-                                                        "operation_status": "SUCCEED"})
+                        else:
+                            items_found = response.json()['result']
+                            for found in items_found:
+                                if data['manifest_id'] in found['extended']['extra']['attributes']:
+                                    responses['result'].append({'name': found['name'], 'geid': found['id'],
+                                                                'operation_status': 'TERMINATED',
+                                                                'error_type': 'attributes_duplicate'})
+                                else:
+                                    updated_items.append(found)
                     else:
+                        updated_items.append(item)
+
+                if updated_items:
+                    file_ids = []
+                    for updated in updated_items:
                         update = {
-                            'parent': item['parent'],
-                            'parent_path': item['parent_path'],
-                            'type': item['type'],
+                            'parent': updated['parent'],
+                            'parent_path': updated['parent_path'],
+                            'tags': updated['extended']['extra']['tags'],
+                            'system_tags': updated['extended']['extra']['system_tags'],
+                            'type': updated['type'],
                             'attribute_template_id': data['manifest_id'],
                             'attributes': data['attributes']
                         }
                         payload['items'].append(update)
-                        file_ids.append(item['id'])
-                if file_ids:
+                        file_ids.append(updated['id'])
+
                     params = {'ids': file_ids}
                     response = requests.put(
                         ConfigClass.METADATA_SERVICE + 'items/batch/', params=params, json=payload)
@@ -437,6 +504,7 @@ class APIDataManifest(metaclass=MetaAPI):
                         responses['result'].append({'name': item['name'], "geid": item['id'],
                                                     "operation_status": "SUCCEED"})
 
+                responses['total'] = len(responses['result'])
                 api_response.set_result(responses)
                 return api_response.to_dict, api_response.code
             except Exception as e:
