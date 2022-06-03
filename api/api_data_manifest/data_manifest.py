@@ -39,8 +39,6 @@ class APIDataManifest(metaclass=MetaAPI):
         api_ns_data_manifest.add_resource(
             self.ImportManifest, '/import/manifest')
         api_ns_data_manifest.add_resource(
-            self.ExportManifest, '/export/manifest')
-        api_ns_data_manifest.add_resource(
             self.FileManifestQuery, '/file/manifest/query')
         api_ns_data_manifest.add_resource(
             self.AttachAttributes, '/file/attributes/attach')
@@ -89,7 +87,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 response = requests.get(
                     ConfigClass.METADATA_SERVICE + f'template/{manifest_id}/')
                 res = response.json()
-                if not res:
+                if not res['result']:
                     my_res.set_code(EAPIResponseCode.not_found)
                     my_res.set_error_msg('Attribute template not found')
                     return my_res.to_dict, my_res.code
@@ -278,42 +276,6 @@ class APIDataManifest(metaclass=MetaAPI):
                 res = response.json()
                 res['result'] = 'Success'
                 return res, response.status_code
-            except Exception as e:
-                _logger.error(
-                    f'Error when calling metadata service: {str(e)}')
-                error_msg = {
-                    'result': str(e)
-                }
-                return error_msg, 500
-
-    class ExportManifest(Resource):
-        """Export attribute template from portal as JSON."""
-
-        @jwt_required()
-        def get(self):
-            api_response = APIResponse()
-            template_id = request.args.get('manifest_id')
-            if not template_id:
-                api_response.set_code(EAPIResponseCode.bad_request)
-                api_response.set_result('Missing required field template_id')
-                return api_response.to_dict, api_response.code
-
-            try:
-                response = requests.get(
-                    ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
-                if not response:
-                    api_response.set_code(EAPIResponseCode.not_found)
-                    api_response.set_error_msg('Attribute template not found')
-                    return api_response.to_dict, api_response.code
-
-                template = response.json()['result']
-                if not has_permission(template['project_code'], 'file_attribute_template', '*', 'export'):
-                    api_response.set_code(EAPIResponseCode.forbidden)
-                    api_response.set_result('Permission Denied')
-                    return api_response.to_dict, api_response.code
-
-                attributes = {'attributes': response.json()['result']['attributes']}
-                return attributes, response.status_code
             except Exception as e:
                 _logger.error(
                     f'Error when calling metadata service: {str(e)}')
