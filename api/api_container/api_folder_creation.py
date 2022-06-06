@@ -27,7 +27,11 @@ class FolderCreation(Resource):
         destination_id = data.get("destination_id")
         parent_entity = None
         if destination_id:
-            parent_entity = get_entity_by_id(destination_id)
+            try:
+                parent_entity = get_entity_by_id(destination_id)
+            except Exception:
+                # name folder
+                pass
 
         if len(folder_name) < 1 or len(folder_name) > 20:
             api_response.set_code(EAPIResponseCode.bad_request)
@@ -52,6 +56,8 @@ class FolderCreation(Resource):
             else:
                 # name folder
                 payload["parent_path"] = parent_entity["name"]
+        else:
+            payload["type"] = "name_folder"
 
         with httpx.Client() as client:
             response = client.post(ConfigClass.METADATA_SERVICE + "item/", json=payload)
