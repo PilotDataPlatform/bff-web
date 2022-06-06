@@ -1,15 +1,18 @@
-from flask import request
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory, ProjectClientSync
-from config import ConfigClass
-from api import module_api
-from models.api_meta_class import MetaAPI
 import json
+
 import requests
-from services.permissions_service.utils import get_project_role
+from common import LoggerFactory
+from flask import request
+from flask_jwt import current_identity, jwt_required
+from flask_restx import Resource
+
+from api import module_api
+from config import ConfigClass
+from models.api_meta_class import MetaAPI
+from models.api_response import APIResponse, EAPIResponseCode
 from services.meta import get_entity_by_id
+from services.permissions_service.utils import get_project_role
+
 from .utils import check_tag_permissions
 
 _logger = LoggerFactory('api_tags').get_logger()

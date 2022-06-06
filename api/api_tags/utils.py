@@ -1,6 +1,6 @@
-from services.permissions_service.utils import has_permission, get_project_role
-from resources.error_handler import APIException
 from models.api_response import EAPIResponseCode
+from resources.error_handler import APIException
+from services.permissions_service.utils import get_project_role, has_permission
 
 
 def check_tag_permissions(entity: dict, username: str):

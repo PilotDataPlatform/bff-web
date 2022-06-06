@@ -1,13 +1,15 @@
-from flask import request
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from config import ConfigClass
-from api import module_api
-from models.api_meta_class import MetaAPI
-from services.meta import get_entities_batch, search_entities
 import requests
+from common import LoggerFactory
+from flask import request
+from flask_jwt import current_identity, jwt_required
+from flask_restx import Resource
+
+from api import module_api
+from config import ConfigClass
+from models.api_meta_class import MetaAPI
+from models.api_response import APIResponse, EAPIResponseCode
+from services.meta import get_entities_batch, search_entities
+
 from .utils import check_tag_permissions, get_new_tags
 
 _logger = LoggerFactory('batch_api_tags').get_logger()
@@ -36,9 +38,6 @@ class APIBatchTagsV2(metaclass=MetaAPI):
             params = {"ids": []}
             for entity in entities:
                 check_tag_permissions(entity, current_identity["username"])
-
-                if only_files and entity["type"] == "folder":
-                    continue
 
                 if inherit:
                     child_entities = search_entities(
