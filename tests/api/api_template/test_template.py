@@ -187,24 +187,34 @@ def test_update_template_attributes_permission_denied_403(test_client, requests_
 
 
 def test_delete_template_by_id_admin_200(test_client, requests_mocker, jwt_token_admin, has_permission_true):
+    mock_data_template = {
+        'result': MOCK_TEMPLATE_DATA
+    }
+
     mock_data = {
         'result': [
         ]
     }
 
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data_template)
     requests_mocker.get(ConfigClass.METADATA_SERVICE + 'items/search/', json=mock_data)
     requests_mocker.delete(ConfigClass.METADATA_SERVICE + f'template/?id={template_id}', json=mock_data)
 
-    payload = {'project_code': 'test_project'}
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', headers=headers)
     assert response.status_code == 200
 
 
-def test_delete_template_by_id_permission_denied_403(test_client, jwt_token_contrib, has_permission_false):
-    payload = {'project_code': 'test_project'}
+def test_delete_template_by_id_permission_denied_403(test_client, jwt_token_contrib, has_permission_false, requests_mocker):
+
+    mock_data = {
+        'result': MOCK_TEMPLATE_DATA
+
+    }
+
     headers = {'Authorization': jwt_token_contrib}
-    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', headers=headers)
     assert response.status_code == 403
 
 
