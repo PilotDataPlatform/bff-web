@@ -1,6 +1,7 @@
 from flask_restx import Api
 from api.api_files import nfs_entity_ns, nfs_upload_ns, nfs_vfolder_ns, nfs_entity_ns_v4
 from resources.error_handler import APIException
+from common import ProjectException
 
 module_api = Api(
     version='1.0',
@@ -12,6 +13,11 @@ module_api = Api(
 
 @module_api.errorhandler(APIException)
 def http_exception_handler(exc: APIException):
+    return exc.content, exc.status_code
+
+
+@module_api.errorhandler(ProjectException)
+def project_exception_handler(exc: ProjectException):
     return exc.content, exc.status_code
 
 

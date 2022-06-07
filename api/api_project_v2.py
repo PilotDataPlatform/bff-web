@@ -65,7 +65,7 @@ class APIProjectV2(metaclass=MetaAPI):
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
             project = project_client.create(**payload)
 
-            if "icon" in post_data:
+            if post_data.get("icon"):
                 project.upload_logo(post_data["icon"])
 
             # Create MinIO bucket for project with name based on zone and dataset_code
@@ -236,9 +236,9 @@ def keycloak_create_roles(code: str):
 
 def bulk_create_folder_usernamespace(users: list, project_code: str):
     try:
-        zone_list = [ConfigClass.GREENROOM_ZONE_LABEL, ConfigClass.CORE_ZONE_LABEL]
+        zone_list = ["greenroom", "core"]
+        folders = []
         for zone in zone_list:
-            folders = []
             for user in users:
                 folders.append({
                     "name": user["name"],

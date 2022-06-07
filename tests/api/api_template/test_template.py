@@ -1,4 +1,3 @@
-import pytest
 from uuid import uuid4
 from config import ConfigClass
 
@@ -17,7 +16,7 @@ MOCK_FILE_DATA = {
     },
     'id': str(uuid4()),
     'last_updated_time': '2021-05-10 19:43:55.383021',
-    'name': 'jiang_folder_2',
+    'name': 'folder2',
     'owner': 'admin',
     'parent': str(uuid4()),
     'parent_path': 'test',
@@ -77,7 +76,8 @@ MOCK_TEMPLATE_DATA = {
                 'A',
                 'B',
                 'C'
-            ]
+            ],
+            'manifest_id': template_id
         }
     ]
 }
@@ -121,9 +121,9 @@ def test_get_template_by_id_admin_200(test_client, requests_mocker, jwt_token_ad
     requests_mocker.get(ConfigClass.AUTH_SERVICE + 'authorize', json=mock_data)
 
     mock_data = {
-        'result': [
+        'result':
             MOCK_TEMPLATE_DATA
-        ]
+
     }
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
 
@@ -138,8 +138,7 @@ def test_get_template_by_invalid_id_admin_404(test_client, requests_mocker, jwt_
     requests_mocker.get(ConfigClass.AUTH_SERVICE + 'authorize', json=mock_data)
 
     mock_data = {
-        'result': [
-        ]
+        'result': {}
     }
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{invalid_id}/', json=mock_data)
 
@@ -152,12 +151,19 @@ def test_update_template_attributes_admin_200(test_client, requests_mocker, jwt_
                                               has_permission_true):
     MOCK_TEMPLATE_UPDATE = MOCK_TEMPLATE_DATA.copy()
     MOCK_TEMPLATE_UPDATE['attributes'][0]['name'] = 'attr2'
-    mock_data = {
+
+    mock_data_1 = {
+        'result': MOCK_TEMPLATE_DATA
+    }
+
+    mock_data_2 = {
         'result': [
             MOCK_TEMPLATE_UPDATE
         ]
     }
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
+
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data_1)
+    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data_2)
 
     headers = {'Authorization': jwt_token_admin}
     response = test_client.put(f'v1/data/manifest/{template_id}', json=MOCK_TEMPLATE_UPDATE, headers=headers)
@@ -181,22 +187,34 @@ def test_update_template_attributes_permission_denied_403(test_client, requests_
 
 
 def test_delete_template_by_id_admin_200(test_client, requests_mocker, jwt_token_admin, has_permission_true):
+    mock_data_template = {
+        'result': MOCK_TEMPLATE_DATA
+    }
+
     mock_data = {
         'result': [
         ]
     }
+
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data_template)
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + 'items/search/', json=mock_data)
     requests_mocker.delete(ConfigClass.METADATA_SERVICE + f'template/?id={template_id}', json=mock_data)
 
-    payload = {'project_code': 'test_project'}
     headers = {'Authorization': jwt_token_admin}
-    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', headers=headers)
     assert response.status_code == 200
 
 
-def test_delete_template_by_id_permission_denied_403(test_client, jwt_token_contrib, has_permission_false):
-    payload = {'project_code': 'test_project'}
+def test_delete_template_by_id_permission_denied_403(test_client, jwt_token_contrib, has_permission_false, requests_mocker):
+
+    mock_data = {
+        'result': MOCK_TEMPLATE_DATA
+
+    }
+
     headers = {'Authorization': jwt_token_contrib}
-    response = test_client.delete(f'v1/data/manifest/{template_id}', json=payload, headers=headers)
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
+    response = test_client.delete(f'v1/data/manifest/{template_id}', headers=headers)
     assert response.status_code == 403
 
 
@@ -213,9 +231,7 @@ def test_update_template_attributes_of_file_admin_200(test_client, requests_mock
     # mock update item attributes by id
     MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'B'}}
     mock_data = {
-        'result': [
-            MOCK_FILE_DATA_ATTR
-        ]
+        'result': MOCK_FILE_DATA_ATTR
     }
     requests_mocker.put(ConfigClass.METADATA_SERVICE + f'item/?id={file_id}', json=mock_data)
 
@@ -269,21 +285,6 @@ def test_import_template_admin_200(test_client, requests_mocker, jwt_token_admin
 
     headers = {'Authorization': jwt_token_admin}
     response = test_client.post('v1/import/manifest', json=MOCK_TEMPLATE_DATA, headers=headers)
-    assert response.status_code == 200
-
-
-def test_export_template_admin_200(test_client, requests_mocker, jwt_token_admin):
-    mock_data = {'result': {'has_permission': 'True'}}
-    requests_mocker.get(ConfigClass.AUTH_SERVICE + 'authorize', json=mock_data)
-
-    mock_data = {
-        'result': MOCK_TEMPLATE_DATA
-    }
-    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/', json=mock_data)
-
-    headers = {'Authorization': jwt_token_admin}
-    params = {'manifest_id': template_id}
-    response = test_client.get(f'v1/export/manifest', query_string=params, headers=headers)
     assert response.status_code == 200
 
 
@@ -386,13 +387,21 @@ def test_attach_attributes_to_folder_contrib_200(test_client, requests_mocker,
 
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id}', json=mock_data)
 
+    # search for items recursively in folder
+    mock_data = {
+        'result': [
+        ]
+    }
+
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + 'items/search/', json=mock_data)
+
     # update attributes for folder (bequeath)
     MOCK_FILE_DATA_ATTR = MOCK_FILE_DATA.copy()
     MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
     mock_data = {
         'result': [MOCK_FILE_DATA_ATTR]
     }
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
+    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/', json=mock_data)
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
@@ -404,9 +413,9 @@ def test_attach_attributes_to_folder_contrib_200(test_client, requests_mocker,
     assert response.status_code == 200
 
 
-def test_attach_attributes_to_folder_failed_contrib_500(test_client, requests_mocker,
-                                                        jwt_token_contrib, has_permission_true,
-                                                        has_project_contributor_role):
+def test_attach_attributes_to_folder_failed_folder_search_contrib_500(test_client, requests_mocker,
+                                                                      jwt_token_contrib, has_permission_true,
+                                                                      has_project_contributor_role):
     # get item by id
     file_id = MOCK_FILE_DATA['id']
     mock_data = {
@@ -415,11 +424,17 @@ def test_attach_attributes_to_folder_failed_contrib_500(test_client, requests_mo
 
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id}', json=mock_data)
 
+    # search for items recursively in folder
+    mock_data = {
+        'result': [
+        ]
+    }
+
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + 'items/search/', json=mock_data, status_code=500)
+
     # update attributes for folder (bequeath)
     MOCK_FILE_DATA_ATTR = MOCK_FILE_DATA.copy()
     MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
-    mock_data = {}
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data, status_code=500)
     headers = {'Authorization': jwt_token_contrib}
     payload = {
         'item_ids': [MOCK_FILE_DATA['id']],
@@ -450,21 +465,25 @@ def test_attach_attributes_to_file_and_folder_contrib_200(test_client, requests_
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id_1}', json=mock_data_folder)
     requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id_2}', json=mock_data_file)
 
-    # update attributes for folder (bequeath)
-    MOCK_FILE_DATA_ATTR_1['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
+    # search for files recursively in folder
     mock_data = {
-        'result': [MOCK_FILE_DATA_ATTR_1]
-    }
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
-
-    # update attributes for file
-    MOCK_FILE_DATA_ATTR_2['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
-    mock_data2 = {
         'result': [
-            MOCK_FILE_DATA_ATTR_2
         ]
     }
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/', json=mock_data2)
+
+    requests_mocker.get(ConfigClass.METADATA_SERVICE + 'items/search/', json=mock_data)
+
+    # update attributes for file and folder
+    MOCK_FILE_DATA_ATTR_1['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
+
+    MOCK_FILE_DATA_ATTR_2['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
+
+    mock_data = {
+        'result': [
+            MOCK_FILE_DATA_ATTR_1, MOCK_FILE_DATA_ATTR_2
+        ]
+    }
+    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/', json=mock_data)
 
     headers = {'Authorization': jwt_token_contrib}
     payload = {
@@ -475,45 +494,3 @@ def test_attach_attributes_to_file_and_folder_contrib_200(test_client, requests_
     }
     response = test_client.post(f'v1/file/attributes/attach', json=payload, headers=headers)
     assert response.status_code == 200
-
-
-def test_attach_attributes_to_file_failed_contrib_500(test_client, requests_mocker,
-                                                      jwt_token_contrib, has_permission_true,
-                                                      has_project_contributor_role):
-    MOCK_FILE_DATA_ATTR_1 = MOCK_FILE_DATA.copy()
-    MOCK_FILE_DATA_ATTR_2 = MOCK_FILE_DATA_2.copy()
-
-    # get item by id
-    file_id_1 = MOCK_FILE_DATA_ATTR_1['id']
-    mock_data_folder = {
-        'result': MOCK_FILE_DATA_ATTR_1
-    }
-    file_id_2 = MOCK_FILE_DATA_ATTR_2['id']
-    mock_data_file = {
-        'result': MOCK_FILE_DATA_ATTR_2
-    }
-
-    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id_1}', json=mock_data_folder)
-    requests_mocker.get(ConfigClass.METADATA_SERVICE + f'item/{file_id_2}', json=mock_data_file)
-
-    # update attributes for folder (bequeath)
-    MOCK_FILE_DATA_ATTR_1['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
-    mock_data = {
-        'result': [MOCK_FILE_DATA_ATTR_1]
-    }
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/bequeath/', json=mock_data)
-
-    # update attributes for file
-    MOCK_FILE_DATA_ATTR_2['extended']['extra']['attributes'] = {template_id: {'attr1': 'A'}}
-    mock_data2 = {}
-    requests_mocker.put(ConfigClass.METADATA_SERVICE + 'items/batch/', json=mock_data2, status_code=500)
-
-    headers = {'Authorization': jwt_token_contrib}
-    payload = {
-        'item_ids': [MOCK_FILE_DATA['id'], MOCK_FILE_DATA_2['id']],
-        'manifest_id': template_id,
-        'project_code': MOCK_FILE_DATA['container_code'],
-        'attributes': {'attr1': 'A'}
-    }
-    response = test_client.post(f'v1/file/attributes/attach', json=payload, headers=headers)
-    assert response.status_code == 500

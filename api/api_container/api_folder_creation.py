@@ -26,8 +26,13 @@ class FolderCreation(Resource):
         zone = data.get("zone")
         destination_id = data.get("destination_id")
         parent_entity = None
+        entity_type = "folder"
         if destination_id:
-            parent_entity = get_entity_by_id(destination_id)
+            try:
+                parent_entity = get_entity_by_id(destination_id)
+            except Exception:
+                # name folder
+                entity_type = "name_folder"
 
         if len(folder_name) < 1 or len(folder_name) > 20:
             api_response.set_code(EAPIResponseCode.bad_request)
@@ -37,7 +42,7 @@ class FolderCreation(Resource):
         payload = {
             "name": folder_name,
             "zone": 0 if zone == "greenroom" else 1,
-            "type": "folder",
+            "type": entity_type,
             "owner": current_identity["username"],
             "container_code": project_code,
             "container_type": "project",
