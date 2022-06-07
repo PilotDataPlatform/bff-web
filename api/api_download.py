@@ -12,7 +12,7 @@ from models.api_response import EAPIResponseCode
 from common import LoggerFactory
 from services.permissions_service.utils import has_permission, get_project_role
 from services.meta import get_entity_by_id
-from services.dataset import get_dataset_by_id
+from services.dataset import get_dataset_by_code, get_dataset_by_id
 
 
 api_resource = module_api.namespace('Dataset Download', description='Dataset Download API', path='/v2/dataset')
@@ -32,12 +32,12 @@ class APIDatasetDownload(metaclass=MetaAPI):
             api_response = APIResponse()
             payload = request.get_json()
             zone = "core"
-            if payload.get("dataset_geid"):
-                dataset_node = get_dataset_by_id(payload.get("dataset_geid"))
+            if payload.get("container_type") == "dataset":
+                dataset_node = get_dataset_by_code(payload.get("container_code"))
 
                 # Get file or folder node
                 for file in payload.get("files"):
-                    entity_node = get_entity_by_id(file["geid"])
+                    entity_node = get_entity_by_id(file["id"])
 
                 # file must belong to dataset
                 if dataset_node["code"] != entity_node["container_code"]:
@@ -54,7 +54,7 @@ class APIDatasetDownload(metaclass=MetaAPI):
                     return api_response.to_dict, api_response.code
             else:
                 for file in payload.get("files"):
-                    entity_node = get_entity_by_id(file["geid"])
+                    entity_node = get_entity_by_id(file["id"])
                     zone = "greenroom" if entity_node["zone"] == 1 else "core"
 
                     if not has_permission(entity_node["container_code"], "file", zone, "download"):
@@ -83,7 +83,7 @@ class APIDatasetDownload(metaclass=MetaAPI):
                 return api_response.to_dict, api_response.code
 
         def has_file_permissions(self, project_code, file_node):
-            zone = "greenroom" if entity_node["zone"] == 1 else "core"
+            zone = "greenroom" if file_node["zone"] == 1 else "core"
             if current_identity["role"] != "admin":
                 role = get_project_role(project_code)
                 if not role in ["admin", "platform_admin"]:
