@@ -1,14 +1,18 @@
-from flask import request
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from models.api_meta_class import MetaAPI
-from config import ConfigClass
-from resources.utils import http_query_node
 import json
+
 import requests
+from common import LoggerFactory
+from flask import request
+from flask_jwt import current_identity
+from flask_jwt import jwt_required
+from flask_restx import Resource
+
 from api import module_api
+from config import ConfigClass
+from models.api_meta_class import MetaAPI
+from models.api_response import APIResponse
+from models.api_response import EAPIResponseCode
+from resources.utils import http_query_node
 from services.permissions_service.decorators import permissions_check
 
 _logger = LoggerFactory('api_dataset').get_logger()
@@ -27,9 +31,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
     class ActivityLogs(Resource):
         @jwt_required()
         def get(self, dataset_geid):
-            """
-                Fetch activity logs of a dataset
-            """
+            """Fetch activity logs of a dataset."""
             _res = APIResponse()
             _logger.info(
                 f'Call API for fetching logs for dataset: {dataset_geid}')
@@ -46,14 +48,14 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                     return _res.to_dict, _res.code
 
                 payload = {
-                    'creator': current_identity["username"],
+                    'creator': current_identity['username'],
                     'id': node[0]['id'],
                 }
                 owner_res = http_query_node('Dataset', payload)
                 nodes_owned = owner_res.json()
                 if len(nodes_owned) == 0:
                     _res.set_code(EAPIResponseCode.forbidden)
-                    _res.set_result("no permission for this dataset")
+                    _res.set_result('no permission for this dataset')
                     return _res.to_dict, _res.code
 
                 query = request.args.get('query', '{}')
@@ -63,17 +65,17 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                 order_type = request.args.get('order_type', 'desc')
 
                 query_info = json.loads(query)
-                query_info["dataset_geid"] = {
-                    "value": dataset_geid,
-                    "condition": "equal"
+                query_info['dataset_geid'] = {
+                    'value': dataset_geid,
+                    'condition': 'equal'
                 }
 
                 params = {
-                    "query": json.dumps(query_info),
-                    "page_size": page_size,
-                    "page": page,
-                    "sort_by": order_by,
-                    "sort_type": order_type,
+                    'query': json.dumps(query_info),
+                    'page_size': page_size,
+                    'page': page,
+                    'sort_by': order_by,
+                    'sort_type': order_type,
                 }
                 response = requests.get(url, params=params)
 
@@ -97,9 +99,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
     class ActivityLogByVersion(Resource):
         @jwt_required()
         def get(self, dataset_geid):
-            """
-                Fetch activity logs of a dataset by version number.
-            """
+            """Fetch activity logs of a dataset by version number."""
             _res = APIResponse()
             _logger.info(
                 f'Call API for fetching logs for dataset: {dataset_geid}')
@@ -123,11 +123,11 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                 version = request.args.get('version', '1')
 
                 params = {
-                    "page_size": page_size,
-                    "page": page,
-                    "sort_by": order_by,
-                    "sort_type": order_type,
-                    "version": version
+                    'page_size': page_size,
+                    'page': page,
+                    'sort_by': order_by,
+                    'sort_type': order_type,
+                    'version': version
                 }
                 response = requests.get(url, params=params)
 

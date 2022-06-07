@@ -12,6 +12,7 @@ from services.meta import get_entities_batch, search_entities
 
 from .utils import check_tag_permissions, get_new_tags
 
+
 _logger = LoggerFactory('batch_api_tags').get_logger()
 api_ns = module_api.namespace(
     'Batch Tags API', description='Batch Tags API', path='/v2')

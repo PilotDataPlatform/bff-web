@@ -10,9 +10,10 @@ from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 from common import LoggerFactory
-from services.neo4j_service.neo4j_client import Neo4jClient
 from services.permissions_service.utils import has_permission, get_project_role
 from services.meta import get_entity_by_id
+from services.dataset import get_dataset_by_id
+
 
 api_resource = module_api.namespace('Dataset Download', description='Dataset Download API', path='/v2/dataset')
 api_resource_download = module_api.namespace('Download', description='Dataset Download API', path='/v2/download')
@@ -30,17 +31,9 @@ class APIDatasetDownload(metaclass=MetaAPI):
         def post(self):
             api_response = APIResponse()
             payload = request.get_json()
-            neo4j_client = Neo4jClient()
             zone = "core"
             if payload.get("dataset_geid"):
-                # Get Dataset
-                response = neo4j_client.node_query("Dataset", {"global_entity_id": payload.get("dataset_geid")})
-                if not response.get("result"):
-                    _logger.error(f"Dataset not found with geid {payload.get('dataset_geid')}")
-                    api_response.set_code(EAPIResponseCode.not_found)
-                    api_response.set_result("Dataset not found")
-                    return api_response.to_dict, api_response.code
-                dataset_node = response.get("result")[0]
+                dataset_node = get_dataset_by_id(payload.get("dataset_geid"))
 
                 # Get file or folder node
                 for file in payload.get("files"):
@@ -118,15 +111,7 @@ class APIDatasetDownload(metaclass=MetaAPI):
 
             _logger.error("test here for the proxy")
 
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.node_query("Dataset", {"global_entity_id": payload.get("dataset_geid")})
-            if not response.get("result"):
-                _logger.error(f"Dataset not found with geid {payload.get('dataset_geid')}")
-                api_response.set_code(EAPIResponseCode.not_found)
-                api_response.set_result("Dataset not found")
-                return api_response.to_dict, api_response.code
-            dataset_node = response.get("result")[0]
-
+            dataset_node = get_dataset_by_id(payload.get("dataset_geid"))
             if dataset_node["creator"] != current_identity["username"]:
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result("Permission Denied")

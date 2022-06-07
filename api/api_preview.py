@@ -1,17 +1,17 @@
 import requests
+from common import LoggerFactory
 from flask import Response, request
 from flask_jwt import current_identity, jwt_required
 from flask_restx import Resource
-from common import LoggerFactory
 
 from api import module_api
 from config import ConfigClass
 from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse, EAPIResponseCode
+from services.dataset import get_dataset_by_id
 from services.meta import get_entity_by_id
-from services.neo4j_service.neo4j_client import Neo4jClient
 
-api_resource = module_api.namespace('Preview', description='Preview API', path='/v1/<file_geid>/preview')
+api_resource = module_api.namespace('Preview', description='Preview API', path='/v1/<file_id>/preview')
 
 _logger = LoggerFactory('api_preview').get_logger()
 
@@ -23,22 +23,14 @@ class APIPreview(metaclass=MetaAPI):
 
     class Preview(Resource):
         @jwt_required()
-        def get(self, file_geid):
+        def get(self, file_id):
             _logger.info("GET preview called in bff")
             api_response = APIResponse()
 
             data = request.args
-            dataset_geid = data.get("dataset_geid")
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.node_query("Dataset", {"global_entity_id": dataset_geid})
-            if not response.get("result"):
-                _logger.error(f"Dataset not found with geid {dataset_geid}")
-                api_response.set_code(EAPIResponseCode.not_found)
-                api_response.set_result("Dataset not found")
-                return api_response.to_dict, api_response.code
-            dataset_node = response.get("result")[0]
-
-            file_node = get_entity_by_id(file_geid)
+            dataset_id = data.get("dataset_geid")
+            dataset_node = get_dataset_by_id(dataset_id)
+            file_node = get_entity_by_id(file_id)
 
             if dataset_node["code"] != file_node["container_code"]:
                 api_response.set_code(EAPIResponseCode.forbidden)
@@ -52,7 +44,7 @@ class APIPreview(metaclass=MetaAPI):
 
             try:
                 response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f"{file_geid}/preview",
+                    ConfigClass.DATASET_SERVICE + f"{file_id}/preview",
                     params=data,
                     headers=request.headers
                 )
@@ -65,25 +57,17 @@ class APIPreview(metaclass=MetaAPI):
 
     class StreamPreview(Resource):
         @jwt_required()
-        def get(self, file_geid):
+        def get(self, file_id):
             _logger.info("GET preview called in bff")
             api_response = APIResponse()
 
             data = request.args
-            dataset_geid = data.get("dataset_geid")
-            neo4j_client = Neo4jClient()
-            response = neo4j_client.node_query("Dataset", {"global_entity_id": dataset_geid})
-            if not response.get("result"):
-                _logger.error(f"Dataset not found with geid {dataset_geid}")
-                api_response.set_code(EAPIResponseCode.not_found)
-                api_response.set_result("Dataset not found")
-                return api_response.to_dict, api_response.code
-            dataset_node = response.get("result")[0]
-
-            file_node = get_entity_by_id(file_geid)
+            dataset_id = data.get("dataset_geid")
+            dataset_node = get_dataset_by_id(dataset_id)
+            file_node = get_entity_by_id(file_id)
 
             if dataset_node["code"] != file_node["container_code"]:
-                _logger.error(f"File doesn't belong to dataset file: {file_geid}, dataset: {dataset_geid}")
+                _logger.error(f"File doesn't belong to dataset file: {file_id}, dataset: {dataset_id}")
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result("File doesn't belong to dataset, Permission Denied")
                 return api_response.to_dict, api_response.code
@@ -95,7 +79,7 @@ class APIPreview(metaclass=MetaAPI):
 
             try:
                 response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f"{file_geid}/preview/stream",
+                    ConfigClass.DATASET_SERVICE + f"{file_id}/preview/stream",
                     params=data,
                     stream=True
                 )
