@@ -119,13 +119,13 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
 
 class APIDatasetFileRenameProxy(metaclass=MetaAPI):
     def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files/<file_geid>')
+        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files/<file_id>')
 
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
-        def post(self, dataset_id, file_geid):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files/{}'.format(dataset_id, file_geid)
+        def post(self, dataset_id, file_id):
+            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files/{}'.format(dataset_id, file_id)
             payload_json = request.get_json()
             respon = requests.post(url, json=payload_json, headers=request.headers)
             return respon.json(), respon.status_code

@@ -14,7 +14,7 @@ api_ns_dataset_schema_template_proxy = module_api.namespace('DatasetSchemaTempla
 class APIDatasetSchemaTemplateProxy(metaclass=MetaAPI):
     def api_registry(self):
         api_ns_dataset_schema_template_proxy.add_resource(
-            self.Restful, '/dataset/<dataset_id>/schemaTPL/<template_geid>'
+            self.Restful, '/dataset/<dataset_id>/schemaTPL/<template_id>'
         )
         api_ns_dataset_schema_template_proxy.add_resource(
             self.SchemaTemplateCreate, '/dataset/<dataset_id>/schemaTPL'
@@ -26,29 +26,29 @@ class APIDatasetSchemaTemplateProxy(metaclass=MetaAPI):
             self.SchemaTemplateDefaultQuery, '/dataset/schemaTPL/default/list'
         )
         api_ns_dataset_schema_template_proxy.add_resource(
-            self.SchemaTemplateDefaultGet, '/dataset/schemaTPL/default/<template_geid>'
+            self.SchemaTemplateDefaultGet, '/dataset/schemaTPL/default/<template_id>'
         )
 
     class Restful(Resource):
         @jwt_required()
         @dataset_permission()
-        def get(self, dataset_id, template_geid):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_geid)
+        def get(self, dataset_id, template_id):
+            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
             respon = requests.get(url, params=request.args, headers=request.headers)
             return respon.json(), respon.status_code
 
         @jwt_required()
         @dataset_permission()
-        def put(self, dataset_id, template_geid):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_geid)
+        def put(self, dataset_id, template_id):
+            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
             payload_json = request.get_json()
             respon = requests.put(url, json=payload_json, headers=request.headers)
             return respon.json(), respon.status_code
 
         @jwt_required()
         @dataset_permission()
-        def delete(self, dataset_id, template_geid):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_geid)
+        def delete(self, dataset_id, template_id):
+            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
             payload_json = request.get_json()
             respon = requests.delete(url, json=payload_json, headers=request.headers)
             return respon.json(), respon.status_code
@@ -84,7 +84,7 @@ class APIDatasetSchemaTemplateProxy(metaclass=MetaAPI):
 
     class SchemaTemplateDefaultGet(Resource):
         @jwt_required()
-        def get(self, template_geid):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_geid)
+        def get(self, template_id):
+            url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_id)
             respon = requests.get(url, params=request.args, headers=request.headers)
             return respon.json(), respon.status_code
