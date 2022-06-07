@@ -43,7 +43,7 @@ class APIBatchTagsV2(metaclass=MetaAPI):
                 if inherit:
                     child_entities = search_entities(
                         entity["container_code"],
-                        entity["parent_path"] + entity["name"],
+                        entity["parent_path"] + "." + entity["name"],
                         entity["zone"],
                         recursive=True
                     )

@@ -26,4 +26,4 @@ def get_new_tags(operation: str, entity: dict, new_tags: list):
         new_tags = entity["extended"]["extra"]["tags"] + new_tags
     else:
         new_tags = [i for i in entity["extended"]["extra"]["tags"] if i not in new_tags]
-    return new_tags
+    return list(set(new_tags))
