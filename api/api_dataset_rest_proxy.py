@@ -87,13 +87,20 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
         @dataset_permission()
         def get(self, dataset_id):
             url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-            respon = requests.get(url, params=request.args, headers=request.headers)
-            return respon.json(), respon.status_code
+            response = requests.get(url, params=request.args, headers=request.headers)
+            if response.status_code != 200:
+                return response.json(), response.status_code
+            entities = []
+            for file_node in response.json()["result"]["data"]:
+                file_node["zone"] = "greenroom" if file_node["zone"] == 0 else "core"
+                entities.append(file_node)
+            result = response.json()["result"]
+            result["data"] = entities
+            return result, response.status_code
 
         @jwt_required()
         @dataset_permission()
         def post(self, dataset_id):
-
             url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
             payload_json = request.get_json()
             respon = requests.post(url, json=payload_json, headers=request.headers)
