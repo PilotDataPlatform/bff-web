@@ -12,7 +12,7 @@ from models.api_response import EAPIResponseCode
 from common import LoggerFactory
 from services.permissions_service.utils import has_permission, get_project_role
 from services.meta import get_entity_by_id
-from services.dataset import get_dataset_by_code, get_dataset_by_id
+from services.dataset import get_dataset_by_code
 
 
 api_resource = module_api.namespace('Dataset Download', description='Dataset Download API', path='/v2/dataset')
@@ -103,15 +103,15 @@ class APIDatasetDownload(metaclass=MetaAPI):
         def post(self):
             api_response = APIResponse()
             payload = request.get_json()
-            if "dataset_geid" not in payload:
-                _logger.error(f"Missing required field dataset_geid")
+            if "dataset_code" not in payload:
+                _logger.error(f"Missing required field dataset_code")
                 api_response.set_code(EAPIResponseCode.bad_request)
-                api_response.set_error_msg("Missing required field dataset_geid")
+                api_response.set_error_msg("Missing required field dataset_code")
                 return api_response.to_dict, api_response.code
 
             _logger.error("test here for the proxy")
 
-            dataset_node = get_dataset_by_id(payload.get("dataset_geid"))
+            dataset_node = get_dataset_by_code(payload.get("dataset_code"))
             if dataset_node["creator"] != current_identity["username"]:
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result("Permission Denied")
