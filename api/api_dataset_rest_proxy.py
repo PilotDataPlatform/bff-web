@@ -94,8 +94,8 @@ class APIDatasetFileProxy(metaclass=MetaAPI):
             for file_node in response.json()["result"]["data"]:
                 file_node["zone"] = "greenroom" if file_node["zone"] == 0 else "core"
                 entities.append(file_node)
-            result = response.json()["result"]
-            result["data"] = entities
+            result = response.json()
+            result["result"]["data"] = entities
             return result, response.status_code
 
         @jwt_required()
