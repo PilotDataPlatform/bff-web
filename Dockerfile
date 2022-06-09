@@ -1,11 +1,5 @@
 FROM python:3.7-buster
 
-ARG MINIO_USERNAME
-ARG MINIO_PASSWORD
-
-ENV MINIO_USERNAME=$MINIO_USERNAME
-ENV MINIO_PASSWORD=$MINIO_PASSWORD
-
 RUN groupadd --gid 1004 deploy \
     && useradd --home-dir /home/deploy --create-home --uid 1004 \
         --gid 1004 --shell /bin/sh --skel /dev/null deploy
@@ -30,6 +24,7 @@ RUN chmod +x /home/deploy/gunicorn_starter.sh
 
 USER deploy
 ENV PATH="/home/deploy/.local/bin:${PATH}"
-ENV MINIO_USERNAME=$MINIO_USERNAME
-ENV MINIO_PASSWORD=$MINIO_PASSWORD
-CMD ["sh", "-c", "mc alias set minio http://minio.minio:9000 $MINIO_USERNAME $MINIO_PASSWORD && ./gunicorn_starter.sh"]
+ENV MINIO_USERNAME=minioadmin
+ENV MINIO_PASSWORD=minioadmin
+ENV MINIO_URL=http://minio.minio:9000
+CMD ["sh", "-c", "mc alias set minio $MINIO_URL $MINIO_USERNAME $MINIO_PASSWORD && ./gunicorn_starter.sh"]
