@@ -1,23 +1,4 @@
-import uuid
-from minio import Minio
-from config import ConfigClass
-
-
-class Minio_Client():
-    '''
-    Connect to MinIO
-    '''
-    def __init__(self):
-        self.client = Minio(
-            ConfigClass.MINIO_ENDPOINT,
-            access_key=ConfigClass.MINIO_ACCESS_KEY,
-            secret_key=ConfigClass.MINIO_SECRET_KEY,
-            secure=ConfigClass.MINIO_HTTPS
-        )
-
-
-
-def create_admin_policy(project_code):
+def get_admin_policy(project_code):
     template = '''
     {
         "Version": "2012-10-17",
@@ -39,16 +20,10 @@ def create_admin_policy(project_code):
         ]
     }
     ''' % (project_code, project_code, project_code, project_code)
-
-    template_name = str(uuid.uuid4())+".json"
-    policy_file = open(template_name, "w")
-    policy_file.write(template)
-    policy_file.close()
-
-    return template_name
+    return template
 
 
-def create_collaborator_policy(project_code):
+def get_collaborator_policy(project_code):
     template = '''
     {
         "Version": "2012-10-17",
@@ -70,16 +45,10 @@ def create_collaborator_policy(project_code):
         ]
     }
     ''' % (project_code, project_code, project_code, project_code)
-
-    template_name = str(uuid.uuid4())+".json"
-    policy_file = open(template_name, "w")
-    policy_file.write(template)
-    policy_file.close()
-
-    return template_name
+    return template
 
 
-def create_contributor_policy(project_code):
+def get_contributor_policy(project_code):
     template = '''
     {
         "Version": "2012-10-17",
@@ -101,10 +70,4 @@ def create_contributor_policy(project_code):
         ]
     }
     ''' % (project_code, project_code, project_code, project_code)
-
-    template_name = str(uuid.uuid4())+".json"
-    policy_file = open(template_name, "w")
-    policy_file.write(template)
-    policy_file.close()
-
-    return template_name
+    return template
