@@ -28,10 +28,10 @@ class APIValidator(metaclass=MetaAPI):
         def post(self):
             _res = APIResponse()
             payload = request.get_json()
-            dataset_id = payload.get('dataset_id', None)
+            dataset_id = payload.get('dataset_geid', None)
             if not dataset_id:
-                _res.code = EAPIResponseCode.bad_request
-                _res.error_msg = 'dataset_id is missing in payload'
+                _res.set_code(EAPIResponseCode.bad_request)
+                _res.set_error_msg('dataset_id is missing in payload')
                 return _res.to_dict, _res.code
 
             _logger.info(f'Call API for validating dataset: {dataset_id}')
