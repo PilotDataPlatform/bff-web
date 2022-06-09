@@ -25,7 +25,7 @@ class APIWorkbench(metaclass=MetaAPI):
                 "project_id": project_id,
             }
             try:
-                response = requests.get(ConfigClass.PROJECT_SERVICE + "/v1/workbenches", json=payload)
+                response = requests.get(ConfigClass.PROJECT_SERVICE + "/v1/workbenches", params=payload)
             except Exception as e:
                 api_response.set_error_msg("Error calling project: " + str(e))
                 api_response.set_code(EAPIResponseCode.internal_error)
