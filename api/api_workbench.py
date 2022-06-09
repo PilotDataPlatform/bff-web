@@ -26,11 +26,14 @@ class APIWorkbench(metaclass=MetaAPI):
             }
             try:
                 response = requests.get(ConfigClass.PROJECT_SERVICE + "/v1/workbenches", params=payload)
+                data = {i["resource"]: i for i in response.json()["result"]}
             except Exception as e:
                 api_response.set_error_msg("Error calling project: " + str(e))
                 api_response.set_code(EAPIResponseCode.internal_error)
                 return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+            api_response.set_result(data)
+            api_response.set_code(response.status_code)
+            return api_response.to_dict, api_response.code
 
         @jwt_required()
         @permissions_check("workbench", "*", "create")
