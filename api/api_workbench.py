@@ -51,4 +51,6 @@ class APIWorkbench(metaclass=MetaAPI):
                 api_response.set_error_msg("Error calling project service: " + str(e))
                 api_response.set_code(EAPIResponseCode.internal_error)
                 return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+            api_response.set_result(response.json())
+            api_response.set_code(response.status_code)
+            return api_response.to_dict, api_response.code
