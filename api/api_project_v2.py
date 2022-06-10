@@ -149,6 +149,7 @@ def create_minio_bucket(project_code: str) -> None:
         bucket_name = bucket_prefix + project_code
         asyncio.run(boto_client.create_bucket(bucket_name))
         asyncio.run(boto_client.create_bucket_encryption(bucket_name))
+        asyncio.run(boto_client.set_bucket_versioning(bucket_name))
 
         mc = asyncio.run(get_minio_policy_client(
             ConfigClass.MINIO_ENDPOINT,
