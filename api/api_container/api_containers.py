@@ -28,7 +28,11 @@ class Containers(Resource):
 
         description = None
         if request.args.get("description"):
-            code = "%" + request.args.get("description") + "%"
+            description = "%" + request.args.get("description") + "%"
+
+        tags = request.args.get('tags')
+        if tags:
+            tags = tags.split(",")
 
         payload = {
             "page": request.args.get("page"),
@@ -37,7 +41,7 @@ class Containers(Resource):
             "order_type": request.args.get("order_type"),
             "name": name,
             "code": code,
-            "tags_all": request.args.get("tags"),
+            "tags_all": tags,
             "description": description,
         }
         if current_identity["role"] != "admin":
