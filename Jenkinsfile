@@ -42,14 +42,10 @@ pipeline {
       when {branch "develop"}
       steps{
         script {
-            withCredentials([
-              usernamePassword(credentialsId:'minio', usernameVariable: 'MINIO_USERNAME', passwordVariable: 'MINIO_PASSWORD')
-            ]) {
-                docker.withRegistry('https://ghcr.io', registryCredential) {
-                    customImage = docker.build("$imagename_dev:$commit", "--build-arg MINIO_USERNAME=$MINIO_USERNAME --build-arg MINIO_PASSWORD=$MINIO_PASSWORD .")
-                    customImage.push()
-                }
-            }
+          docker.withRegistry('https://ghcr.io', registryCredential) {
+              customImage = docker.build("$imagename_dev:$commit", ".")
+              customImage.push()
+          }
         }
       }
     }
