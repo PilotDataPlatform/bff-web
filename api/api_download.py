@@ -55,7 +55,7 @@ class APIDatasetDownload(metaclass=MetaAPI):
             else:
                 for file in payload.get("files"):
                     entity_node = get_entity_by_id(file["id"])
-                    zone = "greenroom" if entity_node["zone"] == 1 else "core"
+                    zone = "greenroom" if entity_node["zone"] == 0 else "core"
 
                     if not has_permission(entity_node["container_code"], "file", zone, "download"):
                         api_response.set_code(EAPIResponseCode.forbidden)
