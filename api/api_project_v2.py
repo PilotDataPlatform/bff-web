@@ -138,38 +138,38 @@ def validate_post_data(post_data: dict):
 
 
 def create_minio_bucket(project_code: str) -> None:
-    #try:
-    boto_client = asyncio.run(get_boto3_admin_client(
-        ConfigClass.MINIO_ENDPOINT,
-        ConfigClass.MINIO_ACCESS_KEY,
-        ConfigClass.MINIO_SECRET_KEY
-    ))
-    prefixs = ["gr-", "core-"]
-    for bucket_prefix in prefixs:
-        bucket_name = bucket_prefix + project_code
-        asyncio.run(boto_client.create_bucket(bucket_name))
-        asyncio.run(boto_client.create_bucket_encryption(bucket_name))
-        asyncio.run(boto_client.set_bucket_versioning(bucket_name))
-
-        mc = asyncio.run(get_minio_policy_client(
+    try:
+        boto_client = asyncio.run(get_boto3_admin_client(
             ConfigClass.MINIO_ENDPOINT,
             ConfigClass.MINIO_ACCESS_KEY,
-            ConfigClass.MINIO_SECRET_KEY,
-            https=ConfigClass.MINIO_HTTPS
+            ConfigClass.MINIO_SECRET_KEY
         ))
+        prefixs = ["gr-", "core-"]
+        for bucket_prefix in prefixs:
+            bucket_name = bucket_prefix + project_code
+            asyncio.run(boto_client.create_bucket(bucket_name))
+            asyncio.run(boto_client.create_bucket_encryption(bucket_name))
+            asyncio.run(boto_client.set_bucket_versioning(bucket_name))
 
-        # add MinIO policies for respective bucket (admin, collaborator, contributor)
-        admin_policy_content = get_admin_policy(project_code)
-        asyncio.run(mc.create_IAM_policy(str(uuid4()), admin_policy_content))
-        contrib_policy_content = get_contributor_policy(project_code)
-        asyncio.run(mc.create_IAM_policy(str(uuid4()), contrib_policy_content))
-        collab_policy_content = get_collaborator_policy(project_code)
-        asyncio.run(mc.create_IAM_policy(str(uuid4()), collab_policy_content))
-        _logger.info(f"MinIO policies successfully applied for: {bucket_name}")
-    #except Exception as e:
-    #    error_msg = f"Error when creating MinIO bucket and policies: {str(e)}"
-    #    _logger.error(error_msg)
-    #    raise APIException(status_code=EAPIResponseCode.internal_error.value, error_msg=error_msg)
+            mc = asyncio.run(get_minio_policy_client(
+                ConfigClass.MINIO_ENDPOINT,
+                ConfigClass.MINIO_ACCESS_KEY,
+                ConfigClass.MINIO_SECRET_KEY,
+                https=ConfigClass.MINIO_HTTPS
+            ))
+
+            # add MinIO policies for respective bucket (admin, collaborator, contributor)
+            admin_policy_content = get_admin_policy(project_code)
+            asyncio.run(mc.create_IAM_policy(str(uuid4()), admin_policy_content))
+            contrib_policy_content = get_contributor_policy(project_code)
+            asyncio.run(mc.create_IAM_policy(str(uuid4()), contrib_policy_content))
+            collab_policy_content = get_collaborator_policy(project_code)
+            asyncio.run(mc.create_IAM_policy(str(uuid4()), collab_policy_content))
+            _logger.info(f"MinIO policies successfully applied for: {bucket_name}")
+    except Exception as e:
+        error_msg = f"Error when creating MinIO bucket and policies: {str(e)}"
+        _logger.error(error_msg)
+        raise APIException(status_code=EAPIResponseCode.internal_error.value, error_msg=error_msg)
 
 
 def ldap_create_user_group(code, description):
