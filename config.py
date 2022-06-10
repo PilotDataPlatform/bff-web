@@ -54,13 +54,10 @@ class Settings(BaseSettings):
 
     KEYCLOAK_REALM: str
 
-    AD_USER_GROUP: str
     AD_PROJECT_GROUP_PREFIX: str
 
     # Services
-
     ENTITYINFO_SERVICE: str
-    CATALOGUING_SERVICE: str
     DATA_OPS_UTIL: str
     NEO4J_SERVICE: str
     AUTH_SERVICE: str
@@ -143,9 +140,6 @@ class Settings(BaseSettings):
         settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + "/v2/"
         settings.METADATA_SERVICE = settings.METADATA_SERVICE + "/v1/"
         settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + "/v1/"
-        CATALOGUING_HOST = settings.CATALOGUING_SERVICE
-        settings.CATALOGUING_SERVICE = CATALOGUING_HOST + "v1/"
-        settings.CATALOGUING_SERVICE_v2 = CATALOGUING_HOST + "/v2/"
         DATA_UTILITY_HOST = settings.DATA_OPS_UTIL
         settings.DATA_UTILITY_SERVICE = DATA_UTILITY_HOST + "/v1/"
         settings.DATA_UTILITY_SERVICE_v2 = DATA_UTILITY_HOST + "/v2/"
