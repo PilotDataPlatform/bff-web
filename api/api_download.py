@@ -83,7 +83,7 @@ class APIDatasetDownload(metaclass=MetaAPI):
                 return api_response.to_dict, api_response.code
 
         def has_file_permissions(self, project_code, file_node):
-            zone = "greenroom" if file_node["zone"] == 1 else "core"
+            zone = "greenroom" if file_node["zone"] == 0 else "core"
             if current_identity["role"] != "admin":
                 role = get_project_role(project_code)
                 if not role in ["admin", "platform_admin"]:
