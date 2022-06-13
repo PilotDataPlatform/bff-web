@@ -14,3 +14,24 @@ def get_entity_by_id(entity_id: str) -> dict:
         raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.not_found.value)
     return response.json()['result']
 
+
+def get_entities_batch(entity_ids: list) -> list:
+    response = requests.get(ConfigClass.METADATA_SERVICE + "items/batch", params={"ids": entity_ids})
+    if response.status_code != 200:
+        error_msg = f'Error calling Meta service get_node_by_id: {response.json()}'
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+    return response.json()['result']
+
+
+def search_entities(container_code: str, parent_path: str, zone: str, recursive: bool = False) -> list:
+    payload = {
+        "container_code": container_code,
+        "parent_path": parent_path,
+        "zone": zone,
+        "recursive": recursive,
+    }
+    response = requests.get(ConfigClass.METADATA_SERVICE + "items/search", params=payload)
+    if response.status_code != 200:
+        error_msg = f'Error calling Meta service get_node_by_id: {response.json()}'
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+    return response.json()['result']

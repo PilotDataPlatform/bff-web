@@ -54,18 +54,13 @@ class Settings(BaseSettings):
 
     KEYCLOAK_REALM: str
 
-    AD_USER_GROUP: str
     AD_PROJECT_GROUP_PREFIX: str
 
     # Services
-
     ENTITYINFO_SERVICE: str
-    DATA_OPS_GR: str
-    CATALOGUING_SERVICE: str
     DATA_OPS_UTIL: str
     NEO4J_SERVICE: str
     AUTH_SERVICE: str
-    UTILITY_SERVICE: str
     PROVENANCE_SERVICE: str
     NOTIFY_SERVICE: str
     EMAIL_SERVICE: str
@@ -145,12 +140,6 @@ class Settings(BaseSettings):
         settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + "/v2/"
         settings.METADATA_SERVICE = settings.METADATA_SERVICE + "/v1/"
         settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + "/v1/"
-        DATA_OPS_HOST = settings.DATA_OPS_GR
-        settings.DATA_SERVICE = DATA_OPS_HOST + "/v1/"
-        settings.DATA_SERVICE_V2 = DATA_OPS_HOST + "/v2/"
-        CATALOGUING_HOST = settings.CATALOGUING_SERVICE
-        settings.CATALOGUING_SERVICE = CATALOGUING_HOST + "v1/"
-        settings.CATALOGUING_SERVICE_v2 = CATALOGUING_HOST + "/v2/"
         DATA_UTILITY_HOST = settings.DATA_OPS_UTIL
         settings.DATA_UTILITY_SERVICE = DATA_UTILITY_HOST + "/v1/"
         settings.DATA_UTILITY_SERVICE_v2 = DATA_UTILITY_HOST + "/v2/"
@@ -158,7 +147,6 @@ class Settings(BaseSettings):
         settings.NEO4J_SERVICE = NEO4J_HOST + "/v1/neo4j/"
         settings.NEO4J_SERVICE_V2 = NEO4J_HOST + "/v2/neo4j/"
         settings.AUTH_SERVICE = settings.AUTH_SERVICE + "/v1/"
-        settings.UTILITY_SERVICE = settings.UTILITY_SERVICE
         settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + "/v1/"
         settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE
         settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + "/v1/email"

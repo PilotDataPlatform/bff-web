@@ -388,7 +388,7 @@ class APIDataManifest(metaclass=MetaAPI):
                     for item in item_ids:
                         entity = get_entity_by_id(item)
                         root_folder = entity['parent_path'].split('.')[0]
-                        zone = 'greenroom' if entity['zone'] == 1 else 'core'
+                        zone = 'core' if entity['zone'] == 1 else 'greenroom'
                         if project_role == 'collaborator':
                             if zone == 'greenroom' and root_folder != current_identity['username']:
                                 api_response.set_code(EAPIResponseCode.forbidden)

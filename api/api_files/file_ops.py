@@ -99,7 +99,7 @@ def validate_delete_permissions(targets: list, project_code):
     if user_project_role not in ["admin", "platform-admin"]:
         for target in targets:
             source = get_entity_by_id(target['id'])
-            zone = "greenroom" if source["zone"] == 1 else "core"
+            zone = "greenroom" if source["zone"] == 0 else "core"
 
             if user_project_role == 'contributor':
                 root_folder = source["parent_path"].split("/")[0]

@@ -91,6 +91,7 @@ def has_permission_true(mocker):
     mocker.patch("services.permissions_service.decorators.has_permission", return_value=True)
     mocker.patch("api.api_files.meta.has_permission", return_value=True)
     mocker.patch("api.api_data_manifest.data_manifest.has_permission", return_value=True)
+    mocker.patch("api.api_tags.utils.has_permission", return_value=True)
 
 
 
@@ -100,6 +101,7 @@ def has_permission_false(mocker):
     mocker.patch("services.permissions_service.decorators.has_permission", return_value=False)
     mocker.patch("api.api_files.meta.has_permission", return_value=False)
     mocker.patch("api.api_data_manifest.data_manifest.has_permission", return_value=False)
+    mocker.patch("api.api_tags.utils.has_permission", return_value=False)
 
 
 @pytest.fixture
