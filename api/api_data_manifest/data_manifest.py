@@ -217,7 +217,7 @@ class APIDataManifest(metaclass=MetaAPI):
                 )
             # Permissions check
             if current_identity['role'] != 'admin':
-                if entity['owner'] != current_identity['username']:
+                if not has_permissions(template_id, entity):
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_result('Permission Denied')
                     return api_response.to_dict, api_response.code
