@@ -19,7 +19,6 @@ from services.permissions_service.utils import get_project_role
 from services.permissions_service.utils import has_permission
 
 from .utils import has_permissions
-from .utils import is_greenroom
 
 api_ns_data_manifests = module_api.namespace(
     'Attribute Templates Restful', description='For data attribute templates feature', path='/v1')
@@ -223,7 +222,7 @@ class APIDataManifest(metaclass=MetaAPI):
                     api_response.set_result('Permission Denied')
                     return api_response.to_dict, api_response.code
 
-            if is_greenroom(entity):
+            if entity["zone"] == 0:
                 zone = 'greenroom'
             else:
                 zone = 'core'
@@ -315,7 +314,7 @@ class APIDataManifest(metaclass=MetaAPI):
                             api_response.set_code(EAPIResponseCode.forbidden)
                             api_response.set_result('Permission denied')
                             return api_response.to_dict, api_response.code
-                        if is_greenroom(entity):
+                        if entity['zone'] == 0:
                             zone = 'greenroom'
                         else:
                             zone = 'core'
