@@ -323,7 +323,7 @@ dotenv = ["python-dotenv"]
 
 [[package]]
 name = "flask-cors"
-version = "3.0.8"
+version = "3.0.9"
 description = "A Flask extension adding a decorator for CORS support"
 category = "main"
 optional = false
@@ -1315,7 +1315,7 @@ testing = ["pytest (>=6)", "pytest-checkdocs (>=2.4)", "pytest-flake8", "pytest-
 [metadata]
 lock-version = "1.1"
 python-versions = ">=3.7,<3.11"
-content-hash = "c7c12bde9b666b8bfb604681510fba46599ae65e3be55866a7758dafcfb9add6"
+content-hash = "bd0876c280c2afed3fc01b32bbc9af82cbf02942b63102857f421c26fb118a18"
 
 [metadata.files]
 aioboto3 = [
@@ -1551,8 +1551,8 @@ flask = [
     {file = "Flask-1.1.4.tar.gz", hash = "sha256:0fbeb6180d383a9186d0d6ed954e0042ad9f18e0e8de088b2b419d526927d196"},
 ]
 flask-cors = [
-    {file = "Flask-Cors-3.0.8.tar.gz", hash = "sha256:72170423eb4612f0847318afff8c247b38bd516b7737adfc10d1c2cdbb382d16"},
-    {file = "Flask_Cors-3.0.8-py2.py3-none-any.whl", hash = "sha256:f4d97201660e6bbcff2d89d082b5b6d31abee04b1b3003ee073a6fd25ad1d69a"},
+    {file = "Flask-Cors-3.0.9.tar.gz", hash = "sha256:6bcfc100288c5d1bcb1dbb854babd59beee622ffd321e444b05f24d6d58466b8"},
+    {file = "Flask_Cors-3.0.9-py2.py3-none-any.whl", hash = "sha256:cee4480aaee421ed029eaa788f4049e3e26d15b5affb6a880dade6bafad38324"},
 ]
 flask-executor = [
     {file = "Flask-Executor-0.9.3.tar.gz", hash = "sha256:a36ae8304f0f26c7b0b5341c9faf8e524c4035fb14b5100302400fed1245cec2"},
