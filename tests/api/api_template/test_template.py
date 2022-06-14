@@ -241,7 +241,7 @@ def test_update_template_attributes_of_file_admin_200(test_client, requests_mock
 
 
 def test_update_template_attributes_of_file_permission_denied_contrib_403(test_client, requests_mocker,
-                                                                          jwt_token_contrib):
+                                                                          jwt_token_contrib, has_permission_false):
     MOCK_FILE_DATA_ATTR = MOCK_FILE_DATA.copy()
     MOCK_FILE_DATA_ATTR['extended']['extra']['attributes'] = {template_id: {'attr1': 'C'}}
     # mock get item by id
