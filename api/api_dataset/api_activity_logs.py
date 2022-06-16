@@ -12,7 +12,7 @@ from config import ConfigClass
 from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
-from resources.utils import http_query_node
+from resources.utils import get_dataset
 from services.permissions_service.decorators import permissions_check
 
 _logger = LoggerFactory('api_dataset').get_logger()
@@ -24,38 +24,30 @@ api_dataset = module_api.namespace(
 class APIDatasetActivityLogs(metaclass=MetaAPI):
     def api_registry(self):
         api_dataset.add_resource(
-            self.ActivityLogs, '/activity-logs/<dataset_geid>')
+            self.ActivityLogs, '/activity-logs/<dataset_id>')
         api_dataset.add_resource(
-            self.ActivityLogByVersion, '/activity-logs/version/<dataset_geid>')
+            self.ActivityLogByVersion, '/activity-logs/version/<dataset_id>')
 
     class ActivityLogs(Resource):
         @jwt_required()
-        def get(self, dataset_geid):
+        def get(self, dataset_id):
             """Fetch activity logs of a dataset."""
             _res = APIResponse()
             _logger.info(
-                f'Call API for fetching logs for dataset: {dataset_geid}')
+                f'Call API for fetching logs for dataset: {dataset_id}')
 
             url = ConfigClass.DATASET_SERVICE + 'activity-logs'
 
             try:
-                node_res = http_query_node(
-                    'Dataset', {'global_entity_id': dataset_geid})
-                node = node_res.json()
-                if len(node) == 0:
+                dataset = get_dataset(dataset_id=dataset_id)
+                if not dataset:
                     _res.set_code(EAPIResponseCode.bad_request)
-                    _res.set_result('Dataset is not exist')
+                    _res.set_result('Dataset does not exist')
                     return _res.to_dict, _res.code
 
-                payload = {
-                    'creator': current_identity['username'],
-                    'id': node[0]['id'],
-                }
-                owner_res = http_query_node('Dataset', payload)
-                nodes_owned = owner_res.json()
-                if len(nodes_owned) == 0:
+                if dataset['creator'] != current_identity['username']:
                     _res.set_code(EAPIResponseCode.forbidden)
-                    _res.set_result('no permission for this dataset')
+                    _res.set_result('No permission for this dataset')
                     return _res.to_dict, _res.code
 
                 query = request.args.get('query', '{}')
@@ -66,7 +58,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
 
                 query_info = json.loads(query)
                 query_info['dataset_geid'] = {
-                    'value': dataset_geid,
+                    'value': dataset_id,
                     'condition': 'equal'
                 }
 
@@ -98,22 +90,20 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
 
     class ActivityLogByVersion(Resource):
         @jwt_required()
-        def get(self, dataset_geid):
+        def get(self, dataset_id):
             """Fetch activity logs of a dataset by version number."""
             _res = APIResponse()
             _logger.info(
-                f'Call API for fetching logs for dataset: {dataset_geid}')
+                f'Call API for fetching logs for dataset: {dataset_id}')
 
             url = ConfigClass.DATASET_SERVICE + \
-                'activity-logs/{}'.format(dataset_geid)
+                'activity-logs/{}'.format(dataset_id)
 
             try:
-                node_res = http_query_node(
-                    'Dataset', {'global_entity_id': dataset_geid})
-                node = node_res.json()
-                if len(node) == 0:
+                dataset = get_dataset(dataset_id=dataset_id)
+                if not dataset:
                     _res.set_code(EAPIResponseCode.bad_request)
-                    _res.set_result('Dataset is not exist')
+                    _res.set_result('Dataset does not exist')
                     return _res.to_dict, _res.code
 
                 page_size = int(request.args.get('page_size', 10))

@@ -31,7 +31,7 @@ def remove_user_from_project_group(project_code, user_email, logger):
         url=ConfigClass.AUTH_SERVICE + "user/ad-group",
         json=payload,
     )
-    if(res.status_code != 200):
+    if (res.status_code != 200):
         logger.error(
             f"Error removing user from group in ad: {res.text} {res.status_code}")
 
@@ -46,11 +46,10 @@ def add_user_to_ad_group(user_email, project_code, logger):
         url=ConfigClass.AUTH_SERVICE + "user/ad-group",
         json=payload,
     )
-    if(res.status_code != 200):
+    if (res.status_code != 200):
         logger.error(f"Error adding user to group in ad: {res.text} {res.status_code}")
 
     return res.json().get("entry")
-
 
 
 ################################################### Simple Helpers ########################################
@@ -61,14 +60,8 @@ def helper_now_utc():
     return utc_time
 
 
-def http_query_node(primary_label, query_params={}):
-    '''
-    primary_label i.e. Folder, File, Container
-    '''
-    payload = {
-        **query_params
-    }
-    node_query_url = ConfigClass.NEO4J_SERVICE + \
-        "nodes/{}/query".format(primary_label)
-    response = requests.post(node_query_url, json=payload)
-    return response
+def get_dataset(dataset_id: str) -> dict:
+    response = requests.get(f'{ConfigClass.DATASET_SERVICE}dataset/{dataset_id}')
+    res = response.json()
+    dataset = res['result']
+    return dataset
