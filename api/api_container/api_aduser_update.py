@@ -96,7 +96,7 @@ class ADUserUpdate(Resource):
         response = requests.put(ConfigClass.AUTH_SERVICE + "user/account", json=payload)
         self.logger.info('Update user in auth results: %s', response.json())
         if response.status_code != 200:
-            self.logger.info('Done with updating user node to neo4j')
+            self.logger.info('Done with updating user node')
             raise (Exception('Internal error when updating user data'))
         return {"result": response.json()}, 200
 
