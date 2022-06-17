@@ -6,7 +6,7 @@ from flask_restx import Resource
 
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
-from models.user_type import map_neo4j_to_frontend
+from models.user_type import map_role_to_frontend
 from resources.error_handler import APIException
 from resources.swagger_modules import success_return
 from resources.utils import (add_user_to_ad_group, remove_user_from_project_group)
@@ -207,7 +207,7 @@ def send_email_user(user, dataset_name, username, role, title, template):
                 "username": username,
                 "admin_name": admin_name,
                 "project_name": dataset_name,
-                "role": map_neo4j_to_frontend(role),
+                "role": map_role_to_frontend(role),
                 "login_url": ConfigClass.INVITATION_URL_LOGIN,
                 "admin_email": ConfigClass.EMAIL_ADMIN,
                 "support_email": ConfigClass.EMAIL_SUPPORT,
