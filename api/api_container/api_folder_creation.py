@@ -7,7 +7,7 @@ from flask_restx import Resource
 
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
-from services.meta import get_entity_by_id
+from services.meta import search_entities
 from services.permissions_service.decorators import permissions_check
 
 _logger = LoggerFactory('api_folder_creation').get_logger()
@@ -24,15 +24,20 @@ class FolderCreation(Resource):
         folder_name = data.get("folder_name")
         project_code = data.get("project_code")
         zone = data.get("zone")
-        destination_id = data.get("destination_id")
+        zone = 0 if zone == "greenroom" else 1
+        parent_path = data.get("parent_path")
         parent_entity = None
         entity_type = "folder"
-        if destination_id:
-            try:
-                parent_entity = get_entity_by_id(destination_id)
-            except Exception:
-                # name folder
-                entity_type = "name_folder"
+
+        if not parent_path:
+            # name folder
+            entity_type = "name_folder"
+        else:
+            # ensure parent_path exists
+            search_parent_path = ".".join(parent_path.split(".")[:-1])
+            name = "".join(parent_path.split(".")[-1])
+            parent_entity = search_entities(project_code, search_parent_path, zone, name=name)
+            parent_entity = parent_entity[0]
 
         if len(folder_name) < 1 or len(folder_name) > 20:
             api_response.set_code(EAPIResponseCode.bad_request)
@@ -41,7 +46,7 @@ class FolderCreation(Resource):
 
         payload = {
             "name": folder_name,
-            "zone": 0 if zone == "greenroom" else 1,
+            "zone": zone,
             "type": entity_type,
             "owner": current_identity["username"],
             "container_code": project_code,

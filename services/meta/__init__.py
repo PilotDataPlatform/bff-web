@@ -23,15 +23,23 @@ def get_entities_batch(entity_ids: list) -> list:
     return response.json()['result']
 
 
-def search_entities(container_code: str, parent_path: str, zone: str, recursive: bool = False) -> list:
+def search_entities(
+    container_code: str,
+    parent_path: str,
+    zone: str,
+    recursive: bool = False,
+    name: str = "",
+) -> list:
     payload = {
         "container_code": container_code,
         "parent_path": parent_path,
         "zone": zone,
         "recursive": recursive,
     }
+    if name:
+        payload["name"] = name
     response = requests.get(ConfigClass.METADATA_SERVICE + "items/search", params=payload)
     if response.status_code != 200:
-        error_msg = f'Error calling Meta service get_node_by_id: {response.json()}'
+        error_msg = f'Error calling Meta service search_entities: {response.json()}'
         raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
     return response.json()['result']
