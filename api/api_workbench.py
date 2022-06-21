@@ -40,11 +40,23 @@ class APIWorkbench(metaclass=MetaAPI):
             }
             try:
                 response = requests.get(ConfigClass.PROJECT_SERVICE + "/v1/workbenches", params=payload)
-                data = {i["resource"]: i for i in response.json()["result"]}
             except Exception as e:
                 api_response.set_error_msg("Error calling project: " + str(e))
                 api_response.set_code(EAPIResponseCode.internal_error)
                 return api_response.to_dict, api_response.code
+
+            result = response.json()["result"]
+            for resource in result:
+                data = {
+                    "user_id": resource["deployed_by_user_id"],
+                }
+                response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=data)
+                if response.status_code != 200:
+                    return response.json(), response.status_code
+                resource["deploy_by_username"] = response.json()["result"]["username"]
+
+            data = {i["resource"]: i for i in result}
+
             api_response.set_result(data)
             api_response.set_code(response.status_code)
             return api_response.to_dict, api_response.code
