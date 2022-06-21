@@ -64,7 +64,7 @@ class APIBatchTagsV2(metaclass=MetaAPI):
                     for child_entity in child_entities:
                         check_tag_permissions(child_entity, current_identity["username"])
 
-                        if only_files and entity["type"] == "folder":
+                        if only_files and child_entity["type"] == "folder":
                             continue
 
                         update_payload["items"].append({
