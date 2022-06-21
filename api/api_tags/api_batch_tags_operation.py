@@ -79,6 +79,10 @@ class APIBatchTagsV2(metaclass=MetaAPI):
                 })
                 params["ids"].append(entity["id"])
 
+            if not update_payload["items"]:
+                api_response.set_result("None updated")
+                return api_response.to_dict, api_response.code
+
             try:
                 response = requests.put(
                     ConfigClass.METADATA_SERVICE + 'items/batch',
