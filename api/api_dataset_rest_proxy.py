@@ -13,176 +13,211 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask import request
-from flask_jwt import current_identity
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
-from api import module_api
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
 from services.dataset import get_dataset_by_id
-from services.permissions_service.decorators import dataset_permission
-from services.permissions_service.decorators import dataset_permission_bycode
-
-api_ns_dataset_proxy = module_api.namespace('DatasetProxy', description='', path='/v1')
-api_ns_dataset_list_proxy = module_api.namespace('DatasetProxy', description='', path='/v1')
+from services.permissions_service.decorators import DatasetPermission, DatasetPermissionByCode
 
 
-class APIDatasetProxy(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>')
-        api_ns_dataset_proxy.add_resource(self.RestfulPost, '/dataset')
-        api_ns_dataset_proxy.add_resource(self.CodeRestful, '/dataset-peek/<dataset_code>')
-        api_ns_dataset_list_proxy.add_resource(self.List, '/users/<username>/datasets')
-
-    class CodeRestful(Resource):
-        @jwt_required()
-        @dataset_permission_bycode()
-        def get(self, dataset_code):
-            url = ConfigClass.DATASET_SERVICE + 'dataset-peek/{}'.format(dataset_code)
-            respon = requests.get(url)
-            return respon.json(), respon.status_code
-
-    class Restful(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def get(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
-            respon = requests.get(url)
-            return respon.json(), respon.status_code
-
-        @jwt_required()
-        @dataset_permission()
-        def put(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.put(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
-
-    class RestfulPost(Resource):
-        @jwt_required()
-        def post(self):
-            url = ConfigClass.DATASET_SERVICE + 'dataset'
-            payload_json = request.get_json()
-            operator_username = current_identity['username']
-            payload_username = payload_json.get('username')
-            if operator_username != payload_username:
-                return {
-                    'err_msg': 'No permissions: {} cannot create dataset for {}'.format(
-                        operator_username, payload_username)
-                }, 403
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
-
-    class List(Resource):
-        @jwt_required()
-        def post(self, username):
-            url = ConfigClass.DATASET_SERVICE + 'users/{}/datasets'.format(username)
-
-            # also check permission
-            operator_username = current_identity['username']
-            if operator_username != username:
-                return {
-                    'err_msg': 'No permissions'
-                }, 403
-
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+router = APIRouter(tags=["Dataset"])
 
 
-class APIDatasetFileProxy(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files')
+@cbv.cbv(router)
+class CodeRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class Restful(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def get(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-            response = requests.get(url, params=request.args, headers=request.headers)
-            if response.status_code != 200:
-                return response.json(), response.status_code
-            entities = []
-            for file_node in response.json()["result"]["data"]:
-                file_node["zone"] = "greenroom" if file_node["zone"] == 0 else "core"
-                entities.append(file_node)
-            result = response.json()
-            result["result"]["data"] = entities
-            return result, response.status_code
-
-        @jwt_required()
-        @dataset_permission()
-        def post(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
-
-        @jwt_required()
-        @dataset_permission()
-        def put(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.put(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
-
-        @jwt_required()
-        @dataset_permission()
-        def delete(self, dataset_id):
-
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.delete(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+    @router.get(
+        '/dataset/dataset-peek/{dataset_code}',
+        summary="Get dataset by code",
+        dependencies=[Depends(DatasetPermissionByCode())]
+    )
+    def get(self, dataset_code: str):
+        url = ConfigClass.DATASET_SERVICE + 'dataset-peek/{}'.format(dataset_code)
+        respon = requests.get(url)
+        return respon.json(), respon.status_code
 
 
-class APIDatasetFileRenameProxy(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/files/<file_id>')
+@cbv.cbv(router)
+class Dataset:
+    current_identity: dict = Depends(jwt_required)
 
-    class Restful(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def post(self, dataset_id, file_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files/{}'.format(dataset_id, file_id)
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+    @router.get(
+        '/dataset/{dataset_id}',
+        summary="Get dataset by id",
+        dependencies=[Depends(DatasetPermission())]
+    )
+    async def get(self, dataset_id: str):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
+        respon = requests.get(url)
+        return respon.json(), respon.status_code
+
+    @router.put(
+        '/dataset/{dataset_id}',
+        summary="Update dataset by id",
+        dependencies=[Depends(DatasetPermission())]
+    )
+    async def put(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
+        payload_json = await request.json()
+        respon = requests.put(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
 
-class APIDatasetFileTasks(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_dataset_proxy.add_resource(self.Restful, '/dataset/<dataset_id>/file/tasks')
+@cbv.cbv(router)
+class RestfulPost:
+    current_identity: dict = Depends(jwt_required)
 
-    class Restful(Resource):
+    @router.post(
+        '/dataset',
+        summary="create dataset",
+    )
+    async def post(self, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset'
+        payload_json = await request.json()
+        operator_username = self.current_identity['username']
+        payload_username = payload_json.get('username')
+        if operator_username != payload_username:
+            return {
+                'err_msg': 'No permissions: {} cannot create dataset for {}'.format(
+                    operator_username, payload_username)
+            }, 403
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
-        @jwt_required()
-        @dataset_permission()
-        def get(self, dataset_id):
-            request_params = request.args
-            new_params = {
-                **request_params,
-                'label': 'Dataset'
-            }
 
-            dataset = get_dataset_by_id(dataset_id)
-            new_params['code'] = dataset['code']
+@cbv.cbv(router)
+class List:
+    current_identity: dict = Depends(jwt_required)
 
-            url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
-            response = requests.get(url, params=new_params)
+    @router.post(
+        '/users/{username}/datasets',
+        summary="List users datasets",
+    )
+    async def post(self, username: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'users/{}/datasets'.format(username)
+
+        # also check permission
+        operator_username = self.current_identity['username']
+        if operator_username != username:
+            return {
+                'err_msg': 'No permissions'
+            }, 403
+
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
+
+
+@cbv.cbv(router)
+class DatasetFiles:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/dataset/{dataset_id}/files',
+        summary="List dataset files",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    def get(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
+        response = requests.get(url, params=request.query_params, headers=request.headers)
+        if response.status_code != 200:
             return response.json(), response.status_code
+        entities = []
+        for file_node in response.json()["result"]["data"]:
+            file_node["zone"] = "greenroom" if file_node["zone"] == 0 else "core"
+            entities.append(file_node)
+        result = response.json()
+        result["result"]["data"] = entities
+        return result, response.status_code
 
-        @jwt_required()
-        @dataset_permission()
-        def delete(self, dataset_id):
-            request_body = request.get_json()
-            request_body.update({'label': 'Dataset'})
+    @router.post(
+        '/dataset/{dataset_id}/files',
+        summary="Move dataset files",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
-            dataset = get_dataset_by_id(dataset_id)
-            request_body['code'] = dataset['code']
+    @router.put(
+        '/dataset/{dataset_id}/files',
+        summary="Recieve the file list from a project and Copy them under the dataset",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def put(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
+        payload_json = await request.json()
+        respon = requests.put(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
-            url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
-            response = requests.delete(url, json=request_body)
-            return response.json(), response.status_code
+    @router.delete(
+        '/dataset/{dataset_id}/files',
+        summary="Remove dataset files",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def delete(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
+        payload_json = request.get_json()
+        respon = requests.delete(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
+
+
+@cbv.cbv(router)
+class DatasetFileUpdate:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/dataset/{dataset_id}/files/{file_id}',
+        summary="update files within the dataset",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, file_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files/{}'.format(dataset_id, file_id)
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
+
+
+@cbv.cbv(router)
+class DatsetTasks:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/dataset/{dataset_id}/file/tasks',
+        summary="Dataset Tasks",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, request: Request):
+        request_params = await request.query_params
+        new_params = {
+            **request_params,
+            'label': 'Dataset'
+        }
+
+        dataset = get_dataset_by_id(dataset_id)
+        new_params['code'] = dataset['code']
+
+        url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
+        response = requests.get(url, params=new_params)
+        return response.json(), response.status_code
+
+    @router.delete(
+        '/dataset/{dataset_id}/file/tasks',
+        summary="Dataset Tasks",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def delete(self, dataset_id: str, request: Request):
+        request_body = await request.json()
+        request_body.update({'label': 'Dataset'})
+
+        dataset = get_dataset_by_id(dataset_id)
+        request_body['code'] = dataset['code']
+
+        url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
+        response = requests.delete(url, json=request_body)
+        return response.json(), response.status_code

@@ -14,105 +14,118 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from common import LoggerFactory
-from flask import request
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
-from api import module_api
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 
-from .utils import check_dataset_permissions
+from services.permissions_service.decorators import DatasetPermission
 
-api_resource = module_api.namespace('DatasetProxy', description='Versions API', path='/v1/dataset/')
+#api_resource = module_api.namespace('DatasetProxy', description='Versions API', path='/v1/dataset/')
+router = APIRouter(tags=["Dataset Version"])
 
 _logger = LoggerFactory('api_versions').get_logger()
 
 
-class APIVersions(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(self.Publish, '/<dataset_id>/publish')
-        api_resource.add_resource(self.PublishStatus, '/<dataset_id>/publish/status')
-        api_resource.add_resource(self.DownloadPre, '/<dataset_id>/download/pre')
-        api_resource.add_resource(self.DatasetVersions, '/<dataset_id>/versions')
+#def api_registry(self):
+#    api_resource.add_resource(self.Publish, '/<dataset_id>/publish')
+#    api_resource.add_resource(self.PublishStatus, '/<dataset_id>/publish/status')
+#    api_resource.add_resource(self.DownloadPre, '/<dataset_id>/download/pre')
+#    api_resource.add_resource(self.DatasetVersions, '/<dataset_id>/versions')
 
-    class Publish(Resource):
-        @jwt_required()
-        def post(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+@cbv.cbv(router)
+class Publish:
+    current_identity: dict = Depends(jwt_required)
 
-            try:
-                response = requests.post(
-                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish', json=request.get_json()
-                )
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+    @router.post(
+        '/dataset/{dataset_id}/publish',
+        summary="Publish a new dataset version",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        try:
+            response = requests.post(
+                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish', json=await request.json()
+            )
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-    class PublishStatus(Resource):
-        @jwt_required()
-        def get(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
 
-            try:
-                response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish/status', params=request.args
-                )
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+@cbv.cbv(router)
+class PublishStatus:
+    current_identity: dict = Depends(jwt_required)
 
-    class DownloadPre(Resource):
-        @jwt_required()
-        def get(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+    @router.get(
+        '/dataset/{dataset_id}/publish/status',
+        summary="Get status of publish",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        try:
+            response = requests.get(
+                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish/status', params=await request.query_params
+            )
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-            try:
-                response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/download/pre',
-                    params=request.args,
-                    headers=request.headers
-                )
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
 
-    class DatasetVersions(Resource):
-        @jwt_required()
-        def get(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+@cbv.cbv(router)
+class DownloadPre:
+    current_identity: dict = Depends(jwt_required)
 
-            try:
-                response = requests.get(
-                    ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/versions',
-                    params=request.args
-                )
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+    @router.get(
+        '/dataset/{dataset_id}/download/pre',
+        summary="pre-download for dataset",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        try:
+            response = requests.get(
+                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/download/pre',
+                params=await request.query_params,
+                headers=request.headers
+            )
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
+
+
+@cbv.cbv(router)
+class DatasetVersions:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/dataset/{dataset_id}/versions',
+        summary="Get dataset versions",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        try:
+            response = requests.get(
+                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/versions',
+                params=await request.query_params
+            )
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code

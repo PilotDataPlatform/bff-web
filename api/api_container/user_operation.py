@@ -17,26 +17,31 @@ from datetime import datetime
 
 import requests
 from common import LoggerFactory, ProjectClientSync
-from flask import request
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
-from resources.swagger_modules import permission_return, users_sample_return
-from services.permissions_service.decorators import permissions_check
+from services.permissions_service.decorators import PermissionsCheck
 
-from .namespace import datasets_entity_ns, users_entity_ns
 
 # init logger
 _logger = LoggerFactory('api_user_ops').get_logger()
 
+router = APIRouter(tags=["User Operations"])
 
-class Users(Resource):
-    @users_entity_ns.response(200, users_sample_return)
-    @jwt_required()
-    @permissions_check('users', '*', 'view')
-    def get(self):
+
+@cbv.cbv(router)
+class Users:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/users/platform',
+        summary="List all users in platform",
+        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
+    )
+    def get(self, request: Request):
         '''
         This method allow user to fetch all registered users in the platform.
         '''
@@ -63,11 +68,16 @@ class Users(Resource):
         return response.json(), response.status_code
 
 
-class ContainerAdmins(Resource):
-    @datasets_entity_ns.response(200, users_sample_return)
-    @jwt_required()
-    @permissions_check('project', '*', 'view')
-    def get(self, project_id):
+@cbv.cbv(router)
+class ContainerAdmins:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/containers/{project_id}/admins"',
+        summary="List all admins in a project",
+        dependencies=[Depends(PermissionsCheck("project", "*", "view"))]
+    )
+    async def get(self, project_id: str):
         '''
         This method allow user to fetch all admins under a specific project with permissions.
         '''
@@ -83,15 +93,19 @@ class ContainerAdmins(Resource):
         return response.json(), response.status_code
 
 
-class ContainerUsers(Resource):
-    @datasets_entity_ns.response(200, users_sample_return)
-    @jwt_required()
-    @permissions_check('users', '*', 'view')
-    def get(self, project_id):
+class ContainerUsers:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/containers/{project_id}/users',
+        summary="List all users in a project",
+        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
+    )
+    def get(self, project_id: str, request: Request):
         '''
         This method allow user to fetch all users under a specific dataset with permissions.
         '''
-        data = request.args
+        data = request.query_params
         _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_id)))
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = project_client.get(id=project_id)
@@ -111,15 +125,20 @@ class ContainerUsers(Resource):
         return response.json(), response.status_code
 
 
-class UserContainerQuery(Resource):
-    @users_entity_ns.response(200, permission_return)
-    @jwt_required()
-    def post(self, username):
+class UserContainerQuery:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/users/{username}/containers"',
+        summary="Query user's containers",
+        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
+    )
+    async def post(self, username: str, request: Request):
         '''
         This method allow user to get the user's permission towards all containers (except default).
         '''
         _logger.info('Call API for fetching user {} role towards all projects'.format(username))
-        data = request.get_json()
+        data = await request.json()
 
         name = None
         if data.get("name"):

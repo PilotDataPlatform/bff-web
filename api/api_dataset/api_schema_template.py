@@ -13,92 +13,106 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask import request
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
+from services.permissions_service.decorators import DatasetPermission
 
-from api import module_api
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
-from services.permissions_service.decorators import dataset_permission
 
-api_ns_dataset_schema_template_proxy = module_api.namespace('DatasetSchemaTemplateProxy', description='', path='/v1')
+router = APIRouter(tags=["Dataset Schema Template"])
 
 
-class APIDatasetSchemaTemplateProxy(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_dataset_schema_template_proxy.add_resource(
-            self.Restful, '/dataset/<dataset_id>/schemaTPL/<template_id>'
-        )
-        api_ns_dataset_schema_template_proxy.add_resource(
-            self.SchemaTemplateCreate, '/dataset/<dataset_id>/schemaTPL'
-        )
-        api_ns_dataset_schema_template_proxy.add_resource(
-            self.SchemaTemplatePostQuery, '/dataset/<dataset_id>/schemaTPL/list'
-        )
-        api_ns_dataset_schema_template_proxy.add_resource(
-            self.SchemaTemplateDefaultQuery, '/dataset/schemaTPL/default/list'
-        )
-        api_ns_dataset_schema_template_proxy.add_resource(
-            self.SchemaTemplateDefaultGet, '/dataset/schemaTPL/default/<template_id>'
-        )
+@cbv.cbv(router)
+class SchemaTempalte:
+    current_identity: dict = Depends(jwt_required)
 
-    class Restful(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def get(self, dataset_id, template_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
-            respon = requests.get(url, params=request.args, headers=request.headers)
-            return respon.json(), respon.status_code
+    @router.post(
+        '/dataset/{dataset_id}/schemaTPL/{template_id}',
+        summary="Get schema template by id",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, template_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
+        respon = requests.get(url, params=await request.query_params, headers=request.headers)
+        return respon.json(), respon.status_code
 
-        @jwt_required()
-        @dataset_permission()
-        def put(self, dataset_id, template_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
-            payload_json = request.get_json()
-            respon = requests.put(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+    @router.put(
+        '/dataset/{dataset_id}/schemaTPL/{template_id}',
+        summary="Update schema template by id",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def put(self, dataset_id: str, template_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
+        payload_json = await request.json()
+        respon = requests.put(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
-        @jwt_required()
-        @dataset_permission()
-        def delete(self, dataset_id, template_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
-            payload_json = request.get_json()
-            respon = requests.delete(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+    @router.delete(
+        '/dataset/{dataset_id}/schemaTPL/{template_id}',
+        summary="Delete schema template by id",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def delete(self, dataset_id: str, template_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
+        payload_json = await request.json()
+        respon = requests.delete(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
-    class SchemaTemplateCreate(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def post(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
 
-    class SchemaTemplatePostQuery(Resource):
-        @jwt_required()
-        @dataset_permission()
-        def post(self, dataset_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/list'.format(dataset_id)
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+@cbv.cbv(router)
+class SchemaTemplateCreate:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/dataset/{dataset_id}/schemaTPL',
+        summary="Create schema template",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL'.format(dataset_id)
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
+
+
+@cbv.cbv(router)
+class SchemaTemplatePostQuery:
+    @router.post(
+        '/dataset/{dataset_id}/schemaTPL/list',
+        summary="List and query schema templates",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/list'.format(dataset_id)
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
 
 ###################################################################################################
 
-    # note this api will have different policy
-    class SchemaTemplateDefaultQuery(Resource):
-        @jwt_required()
-        def post(self):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/list'
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
 
-    class SchemaTemplateDefaultGet(Resource):
-        @jwt_required()
-        def get(self, template_id):
-            url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_id)
-            respon = requests.get(url, params=request.args, headers=request.headers)
-            return respon.json(), respon.status_code
+# note this api will have different policy
+@cbv.cbv(router)
+class SchemaTemplateDefaultQuery:
+    @router.post(
+        '/dataset/schemaTPL/list',
+        summary="List and query schema templates",
+    )
+    async def post(self, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/list'
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
+
+
+@cbv.cbv(router)
+class SchemaTemplateDefaultGet:
+    @router.get(
+        '/dataset/schemaTPL/list',
+        summary="Get default schema",
+    )
+    async def get(self, template_id: str, request: Request):
+        url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_id)
+        respon = requests.get(url, params=request.args, headers=request.headers)
+        return respon.json(), respon.status_code

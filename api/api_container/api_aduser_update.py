@@ -12,28 +12,26 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 import jwt as pyjwt
 import requests
 from common import LoggerFactory, ProjectClientSync
-from flask import request
-from flask_restx import Resource
 
 from config import ConfigClass
-from resources.swagger_modules import new_user_module, user_sample_return
 
-from .namespace import users_entity_ns
+router = APIRouter(tags=["User Activate"])
 
 
-class ADUserUpdate(Resource):
+@cbv.cbv(router)
+class ADUserUpdate:
 
-    logger = LoggerFactory('api_aduser_update').get_logger()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @users_entity_ns.expect(new_user_module)
-    @users_entity_ns.response(200, user_sample_return)
-    def put(self):
+    @router.put(
+        '/users',
+        summary="Activate AD user account on platform",
+    )
+    async def put(self, request: Request):
         """
         This method allow user to activate the AD user account on platform.
         """
@@ -48,7 +46,7 @@ class ADUserUpdate(Resource):
 
         try:
             # validate payload request body
-            post_data = request.get_json()
+            post_data = await request.json()
             self.logger.info('Calling API for updating AD user: {}'.format(post_data))
 
             email = post_data.get('email', None)

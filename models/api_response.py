@@ -23,7 +23,7 @@ class EAPIResponseCode(Enum):
     forbidden = 403
     unauthorized = 401
     conflict = 409
-    
+
 
 class APIResponse:
     def __init__(self):

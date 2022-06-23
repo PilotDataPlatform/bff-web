@@ -13,13 +13,12 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask_jwt import current_identity
 
 from config import ConfigClass
 from services.permissions_service.utils import get_project_role
 
 
-def has_permissions(template_id, file_node):
+def has_permissions(template_id, file_node, current_identity):
     try:
         response = requests.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
         manifest = response.json()['result']

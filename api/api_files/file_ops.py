@@ -13,28 +13,37 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
 
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from resources.error_handler import APIException
-from common import LoggerFactory, ProjectClientSync
-from services.permissions_service.decorators import permissions_check
+from common import LoggerFactory
+from services.permissions_service.decorators import PermissionsCheck
 from services.permissions_service.utils import get_project_role, has_permission
 from services.meta import get_entity_by_id
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
 _logger = LoggerFactory('api_files_ops_v1').get_logger()
+
+router = APIRouter(tags=["File Ops"])
 
 
 # by default this proxy will ONLY call
 # the Container related apis.
-class FileActionTasks(Resource):
-    @jwt_required()
-    @permissions_check('tasks', '*', 'view')
-    def get(self):
-        request_params = {**request.args}
+@cbv.cbv(router)
+class FileActionTasks:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/actions/tasks',
+        summary="Get task information",
+        dependencies=[Depends(PermissionsCheck("tasks", "*", "view"))]
+    )
+    async def get(self, request: Request):
+        data = await request.query_params
+        request_params = {**data}
         # here update the project_code to code
         request_params.update({"code": request_params.get("project_code")})
         url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
@@ -44,10 +53,13 @@ class FileActionTasks(Resource):
         else:
             return response.text, 500
 
-    @jwt_required()
-    @permissions_check('tasks', '*', 'delete')
-    def delete(self):
-        request_body = request.get_json()
+    @router.delete(
+        '/actions/tasks',
+        summary="Delete tasks",
+        dependencies=[Depends(PermissionsCheck("tasks", "*", "delete"))]
+    )
+    async def delete(self, request: Request):
+        request_body = await request.json()
         url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
         response = requests.delete(url, json=request_body)
         if response.status_code == 200:
@@ -56,12 +68,18 @@ class FileActionTasks(Resource):
             return response.text, 500
 
 
-class FileActions(Resource):
-    @jwt_required()
-    def post(self):
+@cbv.cbv(router)
+class FileActions:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/actions',
+        summary="invoke an async file operation job",
+    )
+    async def post(self, request: Request):
         data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/"
         headers = request.headers
-        request_body = request.get_json()
+        request_body = await request.json()
         validate_request_params(request_body)
         operation = request_body.get("operation", None)
         project_code = request_body.get("project_code", None)
@@ -75,7 +93,7 @@ class FileActions(Resource):
             return "Permission denied", EAPIResponseCode.forbidden.value
 
         if operation == 'delete':
-            validate_delete_permissions(targets, project_code)
+            validate_delete_permissions(targets, project_code, self.current_identity)
 
         # request action utility API
         payload = request_body
@@ -103,7 +121,7 @@ def validate_request_params(request_body: dict):
         raise APIException(error_msg="project_code required", status_code=EAPIResponseCode.bad_request.value)
 
 
-def validate_delete_permissions(targets: list, project_code):
+def validate_delete_permissions(targets: list, project_code, current_identity):
     '''
         Project admin can delete files
         Project collaborator can only delete the file belong to them

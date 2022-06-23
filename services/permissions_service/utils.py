@@ -12,16 +12,15 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask_jwt import current_identity
-from flask import request
 import requests
-from common import LoggerFactory, ProjectClientSync
+from fastapi import Request
+from common import LoggerFactory, ProjectClient
 from config import ConfigClass
 
 _logger = LoggerFactory('permissions').get_logger()
 
 
-def has_permission(project_code, resource, zone, operation):
+def has_permission(project_code, resource, zone, operation, current_identity):
     if current_identity["role"] == "admin":
         role = "platform_admin"
     else:
@@ -70,31 +69,32 @@ def get_project_role(project_code):
 
 
 # NEED REDESIGN THIS FUNCTION
-def get_project_code_from_request(kwargs):
+async def get_project_code_from_request(request: Request):
     if request.method == "POST":
-        data = request.get_json()
+        data = await request.json()
 
     elif request.method == "DELETE":
-        data = request.get_json()
+        data = await request.json()
         if not data:
-            data = request.args
+            data = await request.json()
     else:
-        data = request.args
+        data = await request.json()
 
-    project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+    project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
     if "project_code" in data:
         return data["project_code"]
     if "project_geid" in data:
-        project = project_client.get(id=data["project_geid"])
+        project = await project_client.get(id=data["project_geid"])
         return project.code
     if "project_id" in data:
-        project = project_client.get(id=data["project_id"])
+        project = await project_client.get(id=data["project_id"])
         return project.code
+    kwargs = request.path_params
     if "project_code" in kwargs:
         return kwargs["project_code"]
     if "project_geid" in kwargs:
-        project = project_client.get(id=kwargs["project_geid"])
+        project = await project_client.get(id=kwargs["project_geid"])
         return project.code
     if "project_id" in kwargs:
-        project = project_client.get(id=kwargs["project_id"])
+        project = await project_client.get(id=kwargs["project_id"])
         return project.code

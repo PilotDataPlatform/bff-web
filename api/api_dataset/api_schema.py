@@ -14,116 +14,120 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from common import LoggerFactory
-from flask import request
-from flask_jwt import current_identity
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
+from services.permissions_service.decorators import DatasetPermission
 
-from api import module_api
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
 
-from .utils import check_dataset_permissions
 
-api_resource = module_api.namespace('DatasetProxy', description='Versions API', path='/v1/dataset/')
+router = APIRouter(tags=["Dataset Schema"])
 
 _logger = LoggerFactory('api_schema').get_logger()
 
 
-class APISchema(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(self.SchemaCreate, '/<dataset_id>/schema')
-        api_resource.add_resource(self.Schema, '/<dataset_id>/schema/<schema_id>')
-        api_resource.add_resource(self.SchemaList, '/<dataset_id>/schema/list')
+@cbv.cbv(router)
+class SchemaCreate:
+    current_identity: dict = Depends(jwt_required)
 
-    class SchemaCreate(Resource):
-        @jwt_required()
-        def post(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+    @router.post(
+        '/dataset/{dataset_id}/schema',
+        summary="Create a new schema",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        try:
+            response = requests.post(ConfigClass.DATASET_SERVICE + 'schema', json=await request.json())
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-            try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + 'schema', json=request.get_json())
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
 
-    class Schema(Resource):
-        @jwt_required()
-        def put(self, dataset_id, schema_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+@cbv.cbv(router)
+class Schema:
+    current_identity: dict = Depends(jwt_required)
 
-            payload = request.get_json()
-            payload['username'] = current_identity['username']
-            try:
-                response = requests.put(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}', json=payload)
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+    @router.put(
+        '/dataset/{dataset_id}/schema/{schema_id}',
+        summary="Update a schema",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def put(self, dataset_id: str, schema_id: str, request: Request):
+        api_response = APIResponse()
+        payload = await request.json()
+        payload['username'] = self.current_identity['username']
+        try:
+            response = requests.put(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}', json=payload)
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-        @jwt_required()
-        def get(self, dataset_id, schema_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+    @router.get(
+        '/dataset/{dataset_id}/schema/{schema_id}',
+        summary="Get a schema by id",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def get(self, dataset_id: str, schema_id: str):
+        api_response = APIResponse()
 
-            try:
-                response = requests.get(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}')
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+        try:
+            response = requests.get(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}')
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-        @jwt_required()
-        def delete(self, dataset_id, schema_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
+    @router.delete(
+        '/dataset/{dataset_id}/schema/{schema_id}',
+        summary="Delete a schema by id",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def delete(self, dataset_id: str, schema_id: str, request: Request):
+        api_response = APIResponse()
+        payload = await request.json()
+        payload['username'] = self.current_identity['username']
+        payload['dataset_geid'] = dataset_id
+        try:
+            response = requests.delete(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}', json=payload)
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code
 
-            payload = request.get_json()
-            payload['username'] = current_identity['username']
-            payload['dataset_geid'] = dataset_id
-            try:
-                response = requests.delete(ConfigClass.DATASET_SERVICE + f'schema/{schema_id}', json=payload)
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
 
-    class SchemaList(Resource):
-        @jwt_required()
-        def post(self, dataset_id):
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
-            payload = request.get_json()
-            payload['creator'] = current_identity['username']
-            payload['dataset_geid'] = dataset_id
-            try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + 'schema/list', json=payload)
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+@cbv.cbv(router)
+class SchemaList:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/dataset/{dataset_id}/schema/list',
+        summary="List schemas",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        api_response = APIResponse()
+        payload = await request.json()
+        payload['creator'] = self.current_identity['username']
+        payload['dataset_geid'] = dataset_id
+        try:
+            response = requests.post(ConfigClass.DATASET_SERVICE + 'schema/list', json=payload)
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.to_dict, api_response.code
+        return response.json(), response.status_code

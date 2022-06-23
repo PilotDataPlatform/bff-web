@@ -12,16 +12,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import json
-from datetime import timedelta
-from hashlib import md5
-
 from common import LoggerFactory
 
 from config import ConfigClass
 from models.contact_us import ContactUsForm
 from models.service_meta_class import MetaService
-from resources.utils import helper_now_utc
 from services.notifier_services.email_service import SrvEmail
 
 
@@ -29,7 +24,7 @@ class SrvContactUsManager(metaclass=MetaService):
     def __init__(self):
         self._logger = LoggerFactory('api_contact_use').get_logger()
 
-    def save_invitation(self, invitation: ContactUsForm, access_token, current_identity):
+    def send_contact_us_email(self, contact_us_form: ContactUsForm):
         email_sender = SrvEmail()
 
         subject = f'ACTION REQUIRED - {ConfigClass.PROJECT_NAME} Support Request Submitted'
@@ -37,31 +32,27 @@ class SrvContactUsManager(metaclass=MetaService):
             subject,
             [ConfigClass.EMAIL_SUPPORT],
             msg_type='html',
-            attachments=invitation.attachments,
+            attachments=contact_us_form.attachments,
             template='contact_us/support_email.html',
             template_kwargs={
-                'title': invitation.title,
-                'category': invitation.category,
-                'description': invitation.description,
-                'user_email': invitation.email,
+                'title': contact_us_form.title,
+                'category': contact_us_form.category,
+                'description': contact_us_form.description,
+                'user_email': contact_us_form.email,
             },
         )
 
         confirm_subject = 'Confirmation of Contact Email'
         email_sender.send(
             confirm_subject,
-            [invitation.email],
+            [contact_us_form.email],
             msg_type='html',
-            attachments=invitation.attachments,
+            attachments=contact_us_form.attachments,
             template='contact_us/confirm_email.html',
             template_kwargs={
-                'title': invitation.title,
-                'category': invitation.category,
-                'description': invitation.description,
+                'title': contact_us_form.title,
+                'category': contact_us_form.category,
+                'description': contact_us_form.description,
                 'email': ConfigClass.EMAIL_SUPPORT,
             },
         )
-        return 'Saved'
-
-    def deactivate_invitation(self):
-        pass

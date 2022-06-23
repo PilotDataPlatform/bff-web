@@ -12,53 +12,53 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask_jwt import current_identity
+from fastapi import Request
 from .utils import has_permission, get_project_code_from_request
 from common import LoggerFactory
 from services.dataset import get_dataset_by_id, get_dataset_by_code
+from app.auth import get_current_identity
+from models.api_response import EAPIResponseCode
+from resources.error_handler import APIException
 
 _logger = LoggerFactory('permissions').get_logger()
 
 
-def permissions_check(resource, zone, operation):
-    def inner(function):
-        def wrapper(*args, **kwargs):
-            project_code = get_project_code_from_request(kwargs)
-            if not project_code:
-                _logger.error("Couldn't get project_code in permissions_check decorator")
-            if has_permission(project_code, resource, zone, operation):
-                return function(*args, **kwargs)
-            _logger.info(f"Permission denied for {project_code} - {resource} - {zone} - {operation}")
-            return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
-        return wrapper
-    return inner
+class PermissionsCheck:
+    def __init__(self, resource, zone, operation):
+        self.resource = resource
+        self.zone = zone
+        self.operation = operation
+
+    async def __call__(self, request: Request):
+        project_code = await get_project_code_from_request(request)
+        if not project_code:
+            _logger.error("Couldn't get project_code in permissions_check decorator")
+        current_identity = get_current_identity(request)
+        if has_permission(project_code, self.resource, self.zone, self.operation, current_identity):
+            return True
+        _logger.info(f"Permission denied for {project_code} - {self.resource} - {self.zone} - {self.operation}")
+        raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
 
 
-# this is temperory function to check the operation
-# on the dataset. Any post/put action will ONLY require the owner
-def dataset_permission():
-    def inner(function):
-        def wrapper(*args, **kwargs):
-            dataset_id = kwargs.get("dataset_id")
-            dataset = get_dataset_by_id(dataset_id)
-            if dataset["creator"] != current_identity["username"]:
-                return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
-            return function(*args, **kwargs)
-        return wrapper
-    return inner
+class DatasetPermission:
+    async def __call__(self, request: Request):
+        dataset_id = await request.path_params.get("dataset_id")
+        if not dataset_id:
+            dataset_id = await request.json().get("dataset_id")
+        dataset = get_dataset_by_id(dataset_id)
+        current_identity = get_current_identity(request)
+        if dataset["creator"] != current_identity["username"]:
+            raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
+        return True
 
 
-# this is temperory function to check the operation
-# on the dataset. Any post/put action will ONLY require the owner
-def dataset_permission_bycode():
-    def inner(function):
-        def wrapper(*args, **kwargs):
-            dataset_code = kwargs.get("dataset_code")
-            dataset = get_dataset_by_code(dataset_code)
-            if dataset["creator"] != current_identity["username"]:
-                return {'result': 'Permission Denied', 'error_msg': 'Permission Denied'}, 403
-            return function(*args, **kwargs)
-
-        return wrapper
-    return inner
-
+class DatasetPermissionByCode:
+    async def __call__(self, request: Request):
+        dataset_code = await request.path_params.get("dataset_code")
+        if not dataset_code:
+            dataset_code = await request.json().get("dataset_code")
+        dataset = get_dataset_by_code(dataset_code)
+        current_identity = get_current_identity(request)
+        if dataset["creator"] != current_identity["username"]:
+            raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
+        return True

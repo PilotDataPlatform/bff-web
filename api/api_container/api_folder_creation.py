@@ -15,26 +15,33 @@
 """Folder creation API."""
 import httpx
 from common import LoggerFactory
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from services.meta import search_entities
-from services.permissions_service.decorators import permissions_check
+from services.permissions_service.decorators import PermissionsCheck
 
 _logger = LoggerFactory('api_folder_creation').get_logger()
 
+router = APIRouter(tags=["Folder Create"])
 
-class FolderCreation(Resource):
+
+@cbv.cbv(router)
+class FolderCreation:
+    current_identity: dict = Depends(jwt_required)
     _logger = LoggerFactory('api_folder_creation').get_logger()
 
-    @jwt_required()
-    @permissions_check('file', '*', 'upload')
-    def post(self, project_id):
+    @router.get(
+        '/containers/{project_id}/folder',
+        summary="List workbench entries",
+        dependencies=[Depends(PermissionsCheck("file", "*", "upload"))]
+    )
+    async def post(self, project_id: str, request: Request):
         api_response = APIResponse()
-        data = request.get_json()
+        data = await request.json()
         folder_name = data.get("folder_name")
         project_code = data.get("project_code")
         zone = data.get("zone")
@@ -62,7 +69,7 @@ class FolderCreation(Resource):
             "name": folder_name,
             "zone": zone,
             "type": entity_type,
-            "owner": current_identity["username"],
+            "owner": self.current_identity["username"],
             "container_code": project_code,
             "container_type": "project",
             "size": 0,
