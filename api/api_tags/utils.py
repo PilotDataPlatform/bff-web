@@ -20,7 +20,7 @@ from services.permissions_service.utils import get_project_role, has_permission
 def check_tag_permissions(entity: dict, username: str):
     name_folder = entity["parent_path"].split(".")[0]
 
-    if entity["zone"] == 1:
+    if entity["zone"] == 0:
         zone = 'greenroom'
     else:
         zone = 'core'
