@@ -40,4 +40,4 @@ class ContactUsRestful:
         my_res.set_result('[SUCCEED] Contact us Email Sent')
         _logger.info('Contact Us Email Sent')
         my_res.set_code(EAPIResponseCode.success)
-        return my_res.to_dict, my_res.code
+        return my_res.json_response()

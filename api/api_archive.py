@@ -46,7 +46,7 @@ class Archive:
             _logger.error(f"File not found with following id: {file_id}")
             api_response.set_code(EAPIResponseCode.not_found)
             api_response.set_result("File not found")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         if file_response["zone"] == 0:
             zone = 'greenroom'
@@ -57,12 +57,12 @@ class Archive:
         if not has_permission(project_code, 'file', zone, 'view'):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result("Permission Denied")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         if not self.has_file_permissions(project_code, file_response):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result("Permission Denied")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         try:
             response = requests.get(ConfigClass.DATA_UTILITY_SERVICE + "archive", params={"file_id": file_id})

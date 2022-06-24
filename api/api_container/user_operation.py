@@ -64,7 +64,7 @@ class Users:
         except Exception as e:
             api_response.set_error_msg(f"Error get users from auth service: {str(e)}")
             api_response.set_code(EAPIResponseCode.internal_error)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 

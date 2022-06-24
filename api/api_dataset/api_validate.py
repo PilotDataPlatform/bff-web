@@ -45,7 +45,7 @@ class BIDSValidator:
         if not dataset_id:
             _res.set_code(EAPIResponseCode.bad_request)
             _res.set_error_msg('dataset_id is missing in payload')
-            return _res.to_dict, _res.code
+            return _res.json_response()
 
         _logger.info(f'Call API for validating dataset: {dataset_id}')
 
@@ -54,11 +54,11 @@ class BIDSValidator:
             if dataset_node['type'] != 'BIDS':
                 _res.set_code(EAPIResponseCode.bad_request)
                 _res.set_result('Dataset is not BIDS type')
-                return _res.to_dict, _res.code
+                return _res.json_response()
         except Exception as e:
             _res.code = EAPIResponseCode.bad_request
             _res.error_msg = f'error when get dataset node in dataset service: {e}'
-            return _res.to_dict, _res.code
+            return _res.json_response()
 
         try:
             url = ConfigClass.DATASET_SERVICE + 'dataset/verify/pre'
@@ -71,13 +71,13 @@ class BIDSValidator:
                 _logger.error('Failed to verify dataset in dataset service:   ' + response.text)
                 _res.set_code(EAPIResponseCode.internal_error)
                 _res.set_result('Failed to verify dataset in dataset service:   ' + response.text)
-                return _res.to_dict, _res.code
+                return _res.json_response()
             return response.json()
 
         except Exception as e:
             _res.code = EAPIResponseCode.bad_request
             _res.error_msg = f'error when verify dataset in service dataset: {e}'
-            return _res.to_dict, _res.code
+            return _res.json_response()
 
 
 @cbv.cbv(router)
@@ -98,10 +98,10 @@ class BIDSResult:
                 _logger.error('Failed to get dataset bids result in dataset service:   ' + response.text)
                 _res.set_code(EAPIResponseCode.internal_error)
                 _res.set_result('Failed to get dataset bids result in dataset service:   ' + response.text)
-                return _res.to_dict, _res.code
+                return _res.json_response()
             return response.json()
 
         except Exception as e:
             _res.code = EAPIResponseCode.bad_request
             _res.error_msg = f'error when get dataset bids result in service dataset: {e}'
-            return _res.to_dict, _res.code
+            return _res.json_response()

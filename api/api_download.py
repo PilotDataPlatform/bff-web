@@ -56,13 +56,13 @@ class Download:
                               f"dataset: {entity_node['dataset_code']}")
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result("File doesn't belong to dataset, Permission Denied")
-                return api_response.to_dict, api_response.code
+                return api_response.json_response()
 
             # user must own dataset
             if dataset_node["creator"] != self.current_identity["username"]:
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result("Permission Denied")
-                return api_response.to_dict, api_response.code
+                return api_response.json_response()
         else:
             for file in payload.get("files"):
                 entity_node = get_entity_by_id(file["id"])
@@ -71,12 +71,12 @@ class Download:
                 if not has_permission(entity_node["container_code"], "file", zone, "download"):
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_error_msg("Permission Denied")
-                    return api_response.to_dict, api_response.code
+                    return api_response.json_response()
 
                 if not self.has_file_permissions(entity_node["container_code"], entity_node):
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_error_msg("Permission Denied")
-                    return api_response.to_dict, api_response.code
+                    return api_response.json_response()
         try:
             if zone == "core":
                 response = requests.post(
@@ -91,7 +91,7 @@ class Download:
             _logger.info("Error calling download service " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_error_msg("Error calling download service")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
     def has_file_permissions(self, project_code, file_node):
         zone = "greenroom" if file_node["zone"] == 0 else "core"
@@ -125,7 +125,7 @@ class DatasetDownload:
             _logger.error("Missing required field dataset_code")
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_error_msg("Missing required field dataset_code")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         _logger.error("test here for the proxy")
 
@@ -133,7 +133,7 @@ class DatasetDownload:
         if dataset_node["creator"] != self.current_identity["username"]:
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result("Permission Denied")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         _logger.error("test here for the proxy")
         try:
@@ -145,4 +145,4 @@ class DatasetDownload:
             _logger.info("Error calling download service " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_error_msg("Error calling download service")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()

@@ -46,7 +46,7 @@ class SchemaCreate:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -69,7 +69,7 @@ class Schema:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.get(
@@ -86,7 +86,7 @@ class Schema:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.delete(
@@ -105,7 +105,7 @@ class Schema:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -129,5 +129,5 @@ class SchemaList:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code

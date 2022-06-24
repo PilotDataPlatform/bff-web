@@ -12,63 +12,67 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
 from config import ConfigClass
 from models.api_response import APIResponse
-from models.api_meta_class import MetaAPI
-from common import LoggerFactory, ProjectClientSync
-from services.permissions_service.decorators import permissions_check
-from api import module_api
-from flask import request
+from common import LoggerFactory, ProjectClient
+from services.permissions_service.decorators import PermissionsCheck
 import requests
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
-api_ns_projects = module_api.namespace('Project Restful', description='For project feature', path='/v1')
-api_ns_project = module_api.namespace('Project Restful', description='For project feature', path='/v1')
 
 _logger = LoggerFactory('api_project').get_logger()
 
+router = APIRouter(tags=["Project"])
 
-class APIProject(metaclass=MetaAPI):
-    '''
-    [POST]/projects
-    [GET]/projects
-    [GET]/project/<project_id>
-    '''
 
-    def api_registry(self):
-        api_ns_project.add_resource(
-            self.RestfulProject, '/project/<project_geid>')
-        api_ns_project.add_resource(
-            self.RestfulProjectByCode, '/project/code/<project_code>')
-        api_ns_project.add_resource(
-            self.VirtualFolder, '/project/<project_geid>/collections')
+@cbv.cbv(router)
+class RestfulProject:
+    current_identity: dict = Depends(jwt_required)
 
-    class RestfulProject(Resource):
-        @jwt_required()
-        @permissions_check('project', '*', 'view')
-        def get(self, project_geid):
-            # init resp
-            my_res = APIResponse()
-            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = project_client.get(id=project_geid)
-            my_res.set_result(project.json())
-            return my_res.to_dict, my_res.code
+    @router.get(
+        '/project/{project_id}',
+        summary="Get project by id",
+        dependencies=[Depends(PermissionsCheck("project", "*", "view"))]
+    )
+    async def get(self, project_id: str):
+        my_res = APIResponse()
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
+        my_res.set_result(project.json())
+        return my_res.json_response()
 
-    class RestfulProjectByCode(Resource):
-        def get(self, project_code):
-            my_res = APIResponse()
-            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = project_client.get(code=project_code)
-            my_res.set_result(project.json())
-            return my_res.to_dict, my_res.code
 
-    class VirtualFolder(Resource):
-        @jwt_required()
-        @permissions_check('collections', '*', 'update')
-        def put(self, project_geid):
-            url = ConfigClass.METADATA_SERVICE + "collection/"
-            payload = request.get_json()
-            payload["owner"] = current_identity["username"]
-            response = requests.put(url, json=payload)
-            return response.json()
+@cbv.cbv(router)
+class RestfulProjectByCode:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/project/code/{project_code}',
+        summary="Get project by code",
+        dependencies=[Depends(PermissionsCheck("project", "*", "view"))]
+    )
+    async def get(self, project_code: str):
+        my_res = APIResponse()
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(code=project_code)
+        my_res.set_result(project.json())
+        return my_res.json_response()
+
+
+@cbv.cbv(router)
+class VirtualFolder:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.put(
+        '/project/{project_id}/collections',
+        summary="Update project collections",
+        dependencies=[Depends(PermissionsCheck("collections", "*", "update"))]
+    )
+    async def put(self, project_id: str, request: Request):
+        url = ConfigClass.METADATA_SERVICE + "collection/"
+        payload = await request.json()
+        payload["owner"] = self.current_identity["username"]
+        response = requests.put(url, json=payload)
+        return response.json()

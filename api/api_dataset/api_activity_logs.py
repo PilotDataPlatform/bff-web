@@ -57,12 +57,12 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                 if not dataset:
                     _res.set_code(EAPIResponseCode.bad_request)
                     _res.set_result('Dataset does not exist')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
 
                 if dataset['creator'] != current_identity['username']:
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_result('No permission for this dataset')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
 
                 query = request.args.get('query', '{}')
                 page_size = int(request.args.get('page_size', 10))
@@ -91,7 +91,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                     _res.set_code(EAPIResponseCode.internal_error)
                     _res.set_result(
                         'Failed to query activity log from dataset service:   ' + response.text)
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 else:
                     return response.json()
 
@@ -118,7 +118,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                 if not dataset:
                     _res.set_code(EAPIResponseCode.bad_request)
                     _res.set_result('Dataset does not exist')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
 
                 page_size = int(request.args.get('page_size', 10))
                 page = int(request.args.get('page', 0))
@@ -141,7 +141,7 @@ class APIDatasetActivityLogs(metaclass=MetaAPI):
                     _res.set_code(EAPIResponseCode.internal_error)
                     _res.set_result(
                         'Failed to query activity log from dataset service:   ' + response.text)
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 else:
                     return response.json()
 

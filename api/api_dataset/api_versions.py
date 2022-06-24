@@ -55,7 +55,7 @@ class Publish:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -78,7 +78,7 @@ class PublishStatus:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -103,7 +103,7 @@ class DownloadPre:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -127,5 +127,5 @@ class DatasetVersions:
             _logger.info(f'Error calling dataset service: {str(e)}')
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code

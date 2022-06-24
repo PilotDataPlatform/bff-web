@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -41,14 +42,14 @@ class AnnouncementRestful:
         if not data.get("project_code"):
             api_response.set_error_msg("Missing project code")
             api_response.set_code(EAPIResponseCode.bad_request)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         response = requests.get(ConfigClass.NOTIFY_SERVICE + "/v1/announcements", params=data)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
-            return api_response.to_dict, response.status_code
+            return api_response.json_response()
         api_response.set_result(response.json())
-        return api_response.to_dict, response.status_code
+        return api_response.json_response()
 
     @router.post(
         '/announcements',
@@ -61,7 +62,7 @@ class AnnouncementRestful:
         if not data.get("project_code"):
             api_response.set_error_msg("Missing project code")
             api_response.set_code(EAPIResponseCode.bad_request)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         project_client = ProjectClientSync(
             ConfigClass.PROJECT_SERVICE,
@@ -76,6 +77,6 @@ class AnnouncementRestful:
             api_response.set_error_msg(response.json()["error_msg"])
             response_dict = api_response.to_dict
             response_dict["code"] = response.status_code
-            return response_dict, response.status_code
+            return JSONResponse(content=response_dict, status_code=response.status_code)
         api_response.set_result(response.json())
-        return api_response.to_dict, response.status_code
+        return api_response.json_response()

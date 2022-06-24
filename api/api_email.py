@@ -61,21 +61,21 @@ class EmailRestful:
             response.set_code(EAPIResponseCode.bad_request)
             response.set_result(error)
             _logger.error(error)
-            return response.to_dict
+            return response.json_response()
 
         if not subject or not message_body or not (emails or send_to_all_active):
             error = "Missing fields"
             response.set_code(EAPIResponseCode.bad_request)
             response.set_result(error)
             _logger.error(error)
-            return response.to_dict
+            return response.json_response()
 
         if emails and send_to_all_active:
             error = "Can't set both emails and send_to_all_active"
             response.set_code(EAPIResponseCode.bad_request)
             response.set_result(error)
             _logger.error(error)
-            return response.to_dict
+            return response.json_response()
 
         if send_to_all_active:
             payload = {"status": "active"}
@@ -88,7 +88,7 @@ class EmailRestful:
                 response.set_result(EAPIResponseCode.bad_request)
                 response.set_result(error)
                 _logger.error(error)
-                return response.to_dict
+                return response.json_response()
 
         email_service = SrvEmail()
         email_service.send(
@@ -100,4 +100,4 @@ class EmailRestful:
         _logger.info('Notification Email Sent')
         response.set_code(EAPIResponseCode.success)
         response.set_result('success')
-        return response.to_dict
+        return response.json_response()

@@ -50,8 +50,11 @@ def create_app():
         )
 
     @app.exception_handler(ProjectException)
-    def project_exception_handler(exc: ProjectException):
-        return exc.content, exc.status_code
+    def project_exception_handler(request: Request, exc: ProjectException):
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=exc.content,
+        )
 
     api_registry(app)
 

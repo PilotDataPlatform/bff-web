@@ -12,33 +12,32 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask_restx import Resource
-from flask_jwt import jwt_required
-from models.api_meta_class import MetaAPI
-from flask import request
 from models.api_response import APIResponse
-from api import module_api
 from config import ConfigClass
-from services.permissions_service.decorators import permissions_check
+from services.permissions_service.decorators import PermissionsCheck
 import requests
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+from app.auth import jwt_required
 
-api_resource = module_api.namespace(
-    'Notification', description='Notification API', path='/v1')
+router = APIRouter(tags=["Unsubscribe"])
 
 
-class APIUnsubscribe(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(
-            self.UnsubscribeRestful, '/unsubscribe')
+@cbv.cbv(router)
+class UnsubscribeRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class UnsubscribeRestful(Resource):
-        @jwt_required()
-        def post(self):
-            api_response = APIResponse()
-            body = request.get_json()
-            response = requests.post(ConfigClass.NOTIFY_SERVICE+'/v1/unsubscribe', json=body)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
+    @router.get(
+        '/unsubscribe',
+        summary="Create entry",
+        dependencies=[Depends(PermissionsCheck("workbench", "*", "view"))]
+    )
+    async def post(self, request: Request):
+        api_response = APIResponse()
+        body = await request.json()
+        response = requests.post(ConfigClass.NOTIFY_SERVICE + '/v1/unsubscribe', json=body)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()

@@ -63,7 +63,7 @@ class FolderCreation:
         if len(folder_name) < 1 or len(folder_name) > 20:
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_error_msg("Folder should be 1 to 20 characters")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         payload = {
             "name": folder_name,

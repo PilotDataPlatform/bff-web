@@ -12,128 +12,132 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask import request
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
 from models.api_response import APIResponse, EAPIResponseCode
 from common import LoggerFactory
-from models.api_meta_class import MetaAPI
 from config import ConfigClass
 import json
 import requests
-from api import module_api
-from services.permissions_service.decorators import permissions_check
 from services.permissions_service.utils import get_project_role, get_project_code_from_request
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi_utils import cbv
+from app.auth import jwt_required
+from services.permissions_service.decorators import PermissionsCheck
+
 
 _logger = LoggerFactory('api_provenance').get_logger()
 
-api_provenance = module_api.namespace(
-    'Provenance', description='Provenance API', path='/v1')
+router = APIRouter(tags=["Provenance"])
 
 
-class APIProvenance(metaclass=MetaAPI):
-    def api_registry(self):
-        api_provenance.add_resource(self.AuditLog, '/audit-logs/<project_geid>')
-        api_provenance.add_resource(self.DataLineage, '/lineage')
+@cbv.cbv(router)
+class AuditLog:
+    current_identity: dict = Depends(jwt_required)
 
-    class AuditLog(Resource):
-        @jwt_required()
-        @permissions_check('audit_logs', '*', 'view')
-        def get(self, project_geid):
-            """
-                Fetch audit logs of a container
-            """
-            _res = APIResponse()
-            _logger.info(
-                f'Call API for fetching file info for container: {project_geid}')
+    @router.get(
+        '/audit-logs/{project_id}',
+        summary="Fetch audit logs of a container",
+        dependencies=[Depends(PermissionsCheck("audit_logs", "*", "view"))]
+    )
+    async def get(self, project_id: str, request: Request):
+        """
+            Fetch audit logs of a container
+        """
+        _res = APIResponse()
+        _logger.info(
+            f'Call API for fetching file info for container: {project_id}')
 
-            url = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
+        url = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
 
-            try:
-                page_size = int(request.args.get('page_size', 10))
-                page = int(request.args.get('page', 0))
-                order_by = request.args.get('order_by', 'createTime')
-                order_type = request.args.get('order_type', 'desc')
+        try:
+            page_size = int(await request.query_params.get('page_size', 10))
+            page = int(await request.query_params.get('page', 0))
+            order_by = await request.query_params.get('order_by', 'createTime')
+            order_type = await request.query_params.get('order_type', 'desc')
 
-                query = request.args.get('query', '{}')
-                query = json.loads(query)
+            query = await request.query_params.get('query', '{}')
+            query = json.loads(query)
 
-                resource = None
-                action = None
+            resource = None
+            action = None
 
-                params = {
-                    "page_size": page_size,
-                    "page": page,
-                    "order_by": order_by,
-                    "order_type": order_type,
-                }
+            params = {
+                "page_size": page_size,
+                "page": page,
+                "order_by": order_by,
+                "order_type": order_type,
+            }
 
-                if 'start_date' in query:
-                    params["start_date"] = query["start_date"]
+            if 'start_date' in query:
+                params["start_date"] = query["start_date"]
 
-                if 'end_date' in query:
-                    params["end_date"] = query["end_date"]
+            if 'end_date' in query:
+                params["end_date"] = query["end_date"]
 
-                if 'project_code' not in query:
-                    _logger.error('Missing labels in query')
-                    _res.set_code(EAPIResponseCode.bad_request)
-                    _res.set_error_msg(
-                        'Missing required parameter project_code')
-                    return _res.to_dict, _res.code
-                else:
-                    project_code = query['project_code']
-                    params['project_code'] = project_code
+            if 'project_code' not in query:
+                _logger.error('Missing labels in query')
+                _res.set_code(EAPIResponseCode.bad_request)
+                _res.set_error_msg(
+                    'Missing required parameter project_code')
+                return _res.json_response()
+            project_code = query['project_code']
+            params['project_code'] = project_code
 
-                if 'resource' not in query:
-                    _logger.error('Missing labels in query')
-                    _res.set_code(EAPIResponseCode.bad_request)
-                    _res.set_error_msg('Missing required parameter resource')
-                    return _res.to_dict, _res.code
-                else:
-                    resource = query['resource']
-                    params['resource'] = resource
+            if 'resource' not in query:
+                _logger.error('Missing labels in query')
+                _res.set_code(EAPIResponseCode.bad_request)
+                _res.set_error_msg('Missing required parameter resource')
+                return _res.json_response()
+            resource = query['resource']
+            params['resource'] = resource
 
-                if 'action' in query:
-                    action = query['action']
-                    params['action'] = action
+            if 'action' in query:
+                action = query['action']
+                params['action'] = action
 
-                if current_identity['role'] != 'admin':
-                    project_code = get_project_code_from_request({"project_geid": project_geid})
-                    project_role = get_project_role(project_code)
+            if self.current_identity['role'] != 'admin':
+                project_code = get_project_code_from_request({"project_id": project_id})
+                project_role = get_project_role(project_code)
 
-                    if project_role != 'admin':
-                        operator = current_identity['username']
-                        params['operator'] = operator
-                    else:
-                        if 'operator' in query:
-                            params['operator'] = query['operator']
+                if project_role != 'admin':
+                    operator = self.current_identity['username']
+                    params['operator'] = operator
                 else:
                     if 'operator' in query:
                         params['operator'] = query['operator']
+            else:
+                if 'operator' in query:
+                    params['operator'] = query['operator']
 
-                response = requests.get(url, params=params)
+            response = requests.get(url, params=params)
 
-                if response.status_code != 200:
-                    _logger.error(
-                        'Failed to query audit log from provenance service:   ' + response.text)
-                    _res.set_code(EAPIResponseCode.internal_error)
-                    _res.set_result(
-                        'Failed to query audit log from provenance service:   ' + response.text)
-                    return _res.to_dict, _res.code
-                else:
-                    return response.json()
-
-            except Exception as e:
+            if response.status_code != 200:
                 _logger.error(
-                    'Failed to query audit log from provenance service:   ' + str(e))
+                    'Failed to query audit log from provenance service:   ' + response.text)
                 _res.set_code(EAPIResponseCode.internal_error)
                 _res.set_result(
-                    'Failed to query audit log from provenance service:   ' + str(e))
-                return _res.to_dict, _res.code
+                    'Failed to query audit log from provenance service:   ' + response.text)
+                return _res.json_response()
+            return response.json()
 
-    class DataLineage(Resource):
-        @jwt_required()
-        def get(self):
-            url = ConfigClass.PROVENANCE_SERVICE + "lineage/"
-            response = requests.get(url, params=request.args)
-            return response.json(), response.status_code
+        except Exception as e:
+            _logger.error(
+                'Failed to query audit log from provenance service:   ' + str(e))
+            _res.set_code(EAPIResponseCode.internal_error)
+            _res.set_result(
+                'Failed to query audit log from provenance service:   ' + str(e))
+            return _res.json_response()
+
+
+@cbv.cbv(router)
+class DataLineage:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/lineage',
+        summary="Lineage",
+    )
+    async def get(self, request: Request):
+        url = ConfigClass.PROVENANCE_SERVICE + "lineage/"
+        response = requests.get(url, params=await request.query_params)
+        return JSONResponse(content=response.json(), status_code=response.status_code)

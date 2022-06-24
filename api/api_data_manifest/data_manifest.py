@@ -96,7 +96,7 @@ class RestfulManifest:
             if not res['result']:
                 my_res.set_code(EAPIResponseCode.not_found)
                 my_res.set_error_msg('Attribute template not found')
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
 
             for attr in res['result']['attributes']:
                 attr['manifest_id'] = res['result']['id']
@@ -122,7 +122,7 @@ class RestfulManifest:
         if not has_permission(project_code, 'file_attribute_template', '*', 'update'):
             my_res.set_code(EAPIResponseCode.forbidden)
             my_res.set_result('Permission Denied')
-            return my_res.to_dict, my_res.code
+            return my_res.json_response()
 
         try:
             response = requests.get(
@@ -131,7 +131,7 @@ class RestfulManifest:
             if not template:
                 my_res.set_code(EAPIResponseCode.not_found)
                 my_res.set_error_msg('Attribute template not found')
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
 
             if 'attributes' not in data:
                 result = {'id': template['id'], 'name': template['name'], 'project_code': template['project_code']}
@@ -168,14 +168,14 @@ class RestfulManifest:
         if not res:
             my_res.set_code(EAPIResponseCode.not_found)
             my_res.set_error_msg('Attribute template not found')
-            return my_res.to_dict, my_res.code
+            return my_res.json_response()
 
         project_code = res['project_code']
         # Permissions check
         if not has_permission(project_code, 'file_attribute_template', '*', 'delete'):
             my_res.set_code(EAPIResponseCode.forbidden)
             my_res.set_result('Permission Denied')
-            return my_res.to_dict, my_res.code
+            return my_res.json_response()
 
         try:
             # check if template attached to items
@@ -187,25 +187,25 @@ class RestfulManifest:
                     if response.status_code != 200:
                         my_res.set_code(EAPIResponseCode.internal_error)
                         my_res.set_error_msg('Failed to search for items')
-                        return my_res.to_dict, my_res.code
+                        return my_res.json_response()
                     else:
                         items = response.json()['result']
                         for item in items:
                             if manifest_id in item['extended']['extra']['attributes']:
                                 my_res.set_code(EAPIResponseCode.forbidden)
                                 my_res.set_result('Cant delete manifest attached to files')
-                                return my_res.to_dict, my_res.code
+                                return my_res.json_response()
 
             params = {'id': manifest_id}
             response = requests.delete(ConfigClass.METADATA_SERVICE + 'template/', params=params)
             if response.status_code != 200:
                 my_res.set_code(EAPIResponseCode.internal_error)
                 my_res.set_error_msg('Failed to delete attribute template not found')
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
 
             my_res.set_code(EAPIResponseCode.success)
             my_res.set_result('success')
-            return my_res.to_dict, my_res.code
+            return my_res.json_response()
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
@@ -239,7 +239,7 @@ class FileAttributes:
             if not has_permissions(template_id, entity, self.current_identity):
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_result('Permission Denied')
-                return api_response.to_dict, api_response.code
+                return api_response.json_response()
 
         if entity["zone"] == 0:
             zone = 'greenroom'
@@ -248,7 +248,7 @@ class FileAttributes:
         if not has_permission(entity['container_code'], 'file_attribute', zone, 'update'):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result('Permission Denied')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         try:
             params = {'id': entity['id']}
@@ -329,7 +329,7 @@ class FileManifestQuery:
         if 'geid_list' not in data:
             api_response.set_code(EAPIResponseCode.bad_request)
             api_response.set_result('Missing required field: geid_list')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         geid_list = data.get('geid_list')
         lineage_view = data.get('lineage_view')
@@ -343,7 +343,7 @@ class FileManifestQuery:
                     if not has_permissions(template_id, entity, self.current_identity) and not lineage_view:
                         api_response.set_code(EAPIResponseCode.forbidden)
                         api_response.set_result('Permission denied')
-                        return api_response.to_dict, api_response.code
+                        return api_response.json_response()
                     if entity['zone'] == 0:
                         zone = 'greenroom'
                     else:
@@ -351,12 +351,12 @@ class FileManifestQuery:
                     if not has_permission(entity['container_code'], 'file_attribute_template', zone, 'view'):
                         api_response.set_code(EAPIResponseCode.forbidden)
                         api_response.set_result('Permission Denied')
-                        return api_response.to_dict, api_response.code
+                        return api_response.json_response()
                     response = requests.get(ConfigClass.METADATA_SERVICE + f'template/{template_id}/')
                     if response.status_code != 200:
                         api_response.set_code(EAPIResponseCode.not_found)
                         api_response.set_error_msg('Attribute template not found')
-                        return api_response.to_dict, api_response.code
+                        return api_response.json_response()
                     else:
                         attributes = []
                         extended_id = entity['extended']['id']
@@ -380,7 +380,7 @@ class FileManifestQuery:
 
             api_response.set_code(EAPIResponseCode.success)
             api_response.set_result(results)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         except Exception as e:
             _logger.error(f'Error when calling metadata service: {str(e)}')
             error_msg = {'result': str(e)}
@@ -406,7 +406,7 @@ class AttachAttributes:
             if field not in data:
                 api_response.set_code(EAPIResponseCode.bad_request)
                 api_response.set_result(f'Missing required field: {field}')
-                return api_response.to_dict, api_response.code
+                return api_response.json_response()
         item_ids = data.get('item_ids')
         project_code = data.get('project_code')
         items = []
@@ -417,7 +417,7 @@ class AttachAttributes:
                 if not project_role:
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_result('User does not have access to this project')
-                    return api_response.to_dict, api_response.code
+                    return api_response.json_response()
 
                 for item in item_ids:
                     entity = get_entity_by_id(item)
@@ -427,12 +427,12 @@ class AttachAttributes:
                         if zone == 'greenroom' and root_folder != self.current_identity['username']:
                             api_response.set_code(EAPIResponseCode.forbidden)
                             api_response.set_result('Permission denied')
-                            return api_response.to_dict, api_response.code
+                            return api_response.json_response()
                     elif project_role == 'contributor':
                         if root_folder != self.current_identity['username']:
                             api_response.set_code(EAPIResponseCode.forbidden)
                             api_response.set_result('Permission denied')
-                            return api_response.to_dict, api_response.code
+                            return api_response.json_response()
                     items.append(entity)
             else:
                 for item in item_ids:
@@ -450,7 +450,7 @@ class AttachAttributes:
                     if response.status_code != 200:
                         api_response.set_code(EAPIResponseCode.internal_error)
                         api_response.set_error_msg('Failed to search for items')
-                        return api_response.to_dict, api_response.code
+                        return api_response.json_response()
                     else:
                         items_found = response.json()['result']
                         for found in items_found:
@@ -485,16 +485,16 @@ class AttachAttributes:
                     _logger.error('Attaching attributes failed: {}'.format(response.text))
                     api_response.set_code(response.status_code)
                     api_response.set_result(response.text)
-                    return api_response.to_dict, api_response.code
+                    return api_response.json_response()
                 for item in response.json()['result']:
                     responses['result'].append({'name': item['name'], 'geid': item['id'],
                                                 'operation_status': 'SUCCEED'})
 
             responses['total'] = len(responses['result'])
             api_response.set_result(responses)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         except Exception as e:
             _logger.error(f'Error when calling metadata service: {str(e)}')
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result(f'Error when calling metadata service: {str(e)}')
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()

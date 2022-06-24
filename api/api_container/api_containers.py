@@ -78,7 +78,7 @@ class Containers:
         api_response.set_result([i.json() for i in result["result"]])
         api_response.set_total(result["total"])
         api_response.set_num_of_pages(result["num_of_pages"])
-        return api_response.to_dict, api_response.code
+        return api_response.json_response()
 
 
 @cbv.cbv(router)
@@ -106,4 +106,4 @@ class Container:
 
         result = project.update(**update_data)
         api_response.set_result(result.json())
-        return api_response.to_dict, api_response.code
+        return api_response.json_response()

@@ -45,7 +45,7 @@ class CopyRequest:
             response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", params=data)
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.post(
@@ -61,7 +61,7 @@ class CopyRequest:
             # Platform admin can't create request
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_error_msg("Permission denied")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         data["submitted_by"] = self.current_identity["username"]
         data["project_code"] = project_code
@@ -69,7 +69,7 @@ class CopyRequest:
             response = requests.post(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", json=data)
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.post(
@@ -87,7 +87,7 @@ class CopyRequest:
             response = requests.put(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}", json=put_data)
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -108,7 +108,7 @@ class CopyRequestFiles:
             response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files", params=data)
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.put(
@@ -130,7 +130,7 @@ class CopyRequestFiles:
             )
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
     @router.patch(
@@ -152,7 +152,7 @@ class CopyRequestFiles:
             )
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code
 
 
@@ -174,5 +174,5 @@ class CopyRequestPending:
             )
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         return response.json(), response.status_code

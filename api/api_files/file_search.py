@@ -55,28 +55,28 @@ class FileSearch(Resource):
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg(
                         'Permission Deined, Non-admin user does not have access to query all user file info')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 elif current_identity['username'] not in query['display_path']['value']:
                     _logger.error(
                         'Non-admin user can noly have access to their own file info')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg(
                         'Permission Deined, Non-admin user can noly have access to their own file info')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 elif 'zone' not in query:
                     _logger.error(
                         'zone and file_type is required if user role is contributor')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg(
                         'Permission Deined, zone and file_type is required if user role is contributor')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 elif query['zone']['value'] == 'core':
                     _logger.error(
                         'contributor cannot fetch core files or processed files')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg(
                         'Permission Deined, contributor cannot fetch core files or processed files')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
 
             elif project_role == 'collaborator':
                 if query['zone']['value'] == 'greenroom' and 'display_path' not in query:
@@ -84,13 +84,13 @@ class FileSearch(Resource):
                         'collaborator user does not have access to query all greenroom file info')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg('Permission Deined')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
                 elif 'display_path' in query and current_identity['username'] not in query['display_path']['value']:
                     _logger.error(
                         'collaborator user can noly have access to their own file info')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg('Permission Deined')
-                    return _res.to_dict, _res.code
+                    return _res.json_response()
 
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
@@ -120,7 +120,7 @@ class FileSearch(Resource):
                     'Failed to query data from Provenance service:   ' + response.text)
                 _res.set_code(EAPIResponseCode.internal_error)
                 _res.set_result("Failed to query data from Provenance service")
-                return _res.to_dict, _res.code
+                return _res.json_response()
             else:
                 _logger.info('Successfully Fetched file information')
                 return response.json()
@@ -129,4 +129,4 @@ class FileSearch(Resource):
             _logger.error('Failed to query data from es service:   ' + str(e))
             _res.set_code(EAPIResponseCode.internal_error)
             _res.set_result("Failed to query data from es service")
-            return _res.to_dict, _res.code
+            return _res.json_response()

@@ -52,7 +52,7 @@ class InvitationsRestful:
             if not check_invite_permissions(project.json(), self.current_identity):
                 my_res.set_result('Permission denied')
                 my_res.set_code(EAPIResponseCode.forbidden)
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
 
         try:
             post_json['invited_by'] = self.current_identity['username']
@@ -79,7 +79,7 @@ class CheckUserPlatformRole:
         if self.current_identity['role'] != 'admin' and not project_id:
             my_res.set_result('Permission denied')
             my_res.set_code(EAPIResponseCode.unauthorized)
-            return my_res.to_dict, my_res.code
+            return my_res.json_response()
 
         if project_id:
             project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
@@ -88,7 +88,7 @@ class CheckUserPlatformRole:
             if not has_permission(project.code, 'invite', '*', 'create'):
                 my_res.set_result('Permission denied')
                 my_res.set_code(EAPIResponseCode.unauthorized)
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
         try:
             params = {"project_code": project.code}
             response = requests.get(ConfigClass.AUTH_SERVICE + f'invitation/check/{email}', params=params)
@@ -123,7 +123,7 @@ class PendingUserRestful:
             if not has_permission(project.code, 'invite', '*', 'view'):
                 my_res.set_code(EAPIResponseCode.forbidden)
                 my_res.set_error_msg('Permission denied')
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
         try:
             response = requests.post(ConfigClass.AUTH_SERVICE + 'invitation-list/', json=post_json)
         except Exception as e:

@@ -44,7 +44,7 @@ class WorkbenchRestful:
         except Exception as e:
             api_response.set_error_msg("Error calling project: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
         result = response.json()["result"]
         for resource in result:
@@ -60,7 +60,7 @@ class WorkbenchRestful:
 
         api_response.set_result(data)
         api_response.set_code(response.status_code)
-        return api_response.to_dict, api_response.code
+        return api_response.json_response()
 
     @router.post(
         '/{project_id}/workbench',
@@ -80,7 +80,7 @@ class WorkbenchRestful:
         except Exception as e:
             api_response.set_error_msg("Error calling project service: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
         api_response.set_result(response.json())
         api_response.set_code(response.status_code)
-        return api_response.to_dict, api_response.code
+        return api_response.json_response()
