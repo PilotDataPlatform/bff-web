@@ -138,6 +138,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     MINIO_HTTPS: bool = False
+    MINIO_BUCKET_ENCRYPTION: bool = True
 
     RESOURCES: List[str] = ["SuperSet", "Guacamole"]
 

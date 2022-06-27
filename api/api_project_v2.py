@@ -162,8 +162,13 @@ def create_minio_bucket(project_code: str) -> None:
         for bucket_prefix in prefixs:
             bucket_name = bucket_prefix + project_code
             asyncio.run(boto_client.create_bucket(bucket_name))
-            asyncio.run(boto_client.create_bucket_encryption(bucket_name))
             asyncio.run(boto_client.set_bucket_versioning(bucket_name))
+
+            if ConfigClass.MINIO_BUCKET_ENCRYPTION:
+                _logger.info('Bucket encyrption enabled, encrypting %s' % bucket_name)
+                asyncio.run(boto_client.create_bucket_encryption(bucket_name))
+            else:
+                _logger.warn('Bucket encryption is not enabled, not encrypting %s' % bucket_name)
 
             mc = asyncio.run(get_minio_policy_client(
                 ConfigClass.MINIO_ENDPOINT,
