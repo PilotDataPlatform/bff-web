@@ -198,7 +198,7 @@ def ldap_create_user_group(code, description):
         conn.simple_bind_s(ConfigClass.LDAP_ADMIN_DN,
                            ConfigClass.LDAP_ADMIN_SECRET)
 
-        dn = "cn={}-{},ou=Gruppen,ou={},dc={},dc={}".format(
+        dn = "cn={}-{},ou={},dc={},dc={}".format(
             ConfigClass.AD_PROJECT_GROUP_PREFIX,
             code,
             ConfigClass.LDAP_OU,
