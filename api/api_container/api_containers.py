@@ -41,25 +41,25 @@ class Containers:
         api_response = APIResponse()
 
         name = None
-        if await request.query_params.get("name"):
-            name = "%" + await request.query_params.get("name") + "%"
+        if request.query_params.get("name"):
+            name = "%" + request.query_params.get("name") + "%"
         code = None
-        if await request.query_params.get("code"):
-            code = "%" + await request.query_params.get("code") + "%"
+        if request.query_params.get("code"):
+            code = "%" + request.query_params.get("code") + "%"
 
         description = None
-        if await request.query_params.get("description"):
-            description = "%" + await request.query_params.get("description") + "%"
+        if request.query_params.get("description"):
+            description = "%" + request.query_params.get("description") + "%"
 
         tags = request.query_params.get('tags')
         if tags:
             tags = tags.split(",")
 
         payload = {
-            "page": await request.query_params.get("page"),
-            "page_size": await request.query_params.get("page_size"),
-            "order_by": await request.query_params.get("order_by"),
-            "order_type": await request.query_params.get("order_type"),
+            "page": request.query_params.get("page"),
+            "page_size": request.query_params.get("page_size"),
+            "order_by": request.query_params.get("order_by"),
+            "order_type": request.query_params.get("order_type"),
             "name": name,
             "code": code,
             "tags_all": tags,
@@ -68,9 +68,9 @@ class Containers:
         if self.current_identity["role"] != "admin":
             payload["is_discoverable"] = True
 
-        if "create_time_start" in await request.query_params and "create_time_end" in await request.query_params:
-            payload["created_at_start"] = await request.query_params.get("create_time_start")
-            payload["created_at_end"] = await request.query_params.get("create_time_end")
+        if "create_time_start" in request.query_params and "create_time_end" in request.query_params:
+            payload["created_at_start"] = request.query_params.get("create_time_start")
+            payload["created_at_end"] = request.query_params.get("create_time_end")
 
         result = {}
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)

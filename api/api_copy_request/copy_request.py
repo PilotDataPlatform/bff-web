@@ -37,7 +37,7 @@ class CopyRequest:
     )
     async def get(self, project_code: str, request: Request):
         api_response = APIResponse()
-        data = await request.query_params
+        data = request.query_params
         if get_project_role(project_code) == "collaborator":
             data["submitted_by"] = self.current_identity["username"]
 
@@ -102,7 +102,7 @@ class CopyRequestFiles:
     )
     async def get(self, project_code: str, request: Request):
         api_response = APIResponse()
-        data = await request.query_params.copy()
+        data = request.query_params.copy()
 
         try:
             response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files", params=data)

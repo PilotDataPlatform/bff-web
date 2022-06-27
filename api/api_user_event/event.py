@@ -35,7 +35,7 @@ class Event:
     )
     async def get(self, request: Request):
         """ List user events """
-        event_response = httpx.get(ConfigClass.AUTH_SERVICE + "events", params=await request.query_params)
+        event_response = httpx.get(ConfigClass.AUTH_SERVICE + "events", params=request.query_params)
         event_response_json = event_response.json()
         events = event_response.json()["result"]
         project_codes = [i["detail"]["project_code"] for i in events if "project_code" in i["detail"]]

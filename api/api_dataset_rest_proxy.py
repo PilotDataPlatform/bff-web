@@ -193,7 +193,7 @@ class DatsetTasks:
         dependencies=[Depends(DatasetPermission())],
     )
     async def get(self, dataset_id: str, request: Request):
-        request_params = await request.query_params
+        request_params = request.query_params
         new_params = {
             **request_params,
             'label': 'Dataset'

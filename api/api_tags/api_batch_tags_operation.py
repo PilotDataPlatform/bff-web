@@ -53,7 +53,7 @@ class BatchTagsAPIV2:
         }
         params = {"ids": []}
         for entity in entities:
-            check_tag_permissions(entity, self.current_identity["username"])
+            check_tag_permissions(entity, self.current_identity)
 
             if inherit:
                 child_entities = search_entities(
@@ -63,7 +63,7 @@ class BatchTagsAPIV2:
                     recursive=True
                 )
                 for child_entity in child_entities:
-                    check_tag_permissions(child_entity, self.current_identity["username"])
+                    check_tag_permissions(child_entity, self.current_identity)
 
                     if only_files and child_entity["type"] == "folder":
                         continue

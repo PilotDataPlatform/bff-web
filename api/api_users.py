@@ -39,7 +39,7 @@ class UserRestful:
     )
     async def get(self, username: str, request: Request):
         api_response = APIResponse()
-        project_code = await request.query_params.get("project_code")
+        project_code = request.query_params.get("project_code")
 
         if self.current_identity["role"] != "admin" and self.current_identity["username"] != username:
             if not project_code:

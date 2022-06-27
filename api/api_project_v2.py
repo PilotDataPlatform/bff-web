@@ -32,8 +32,6 @@ from app.auth import jwt_required
 
 from services.permissions_service.decorators import PermissionsCheck
 
-#api_ns_projects = module_api.namespace('Project Restful', description='For project feature', path='/v1')
-
 _logger = LoggerFactory('api_project').get_logger()
 
 router = APIRouter(tags=["Project"])
@@ -60,8 +58,8 @@ class RestfulProjectsv2:
         description = post_data.get("description", None)
         project_code = post_data.get("code", None)
 
-        validate_post_data(post_data)
-        duplicate_check(project_code)
+        await validate_post_data(post_data)
+        await duplicate_check(project_code)
 
         payload = {
             "name": post_data.get("name"),
@@ -74,10 +72,10 @@ class RestfulProjectsv2:
         project = await project_client.create(**payload)
 
         if post_data.get("icon"):
-            project.upload_logo(post_data["icon"])
+            await project.upload_logo(post_data["icon"])
 
         # Create MinIO bucket for project with name based on zone and dataset_code
-        create_minio_bucket(project_code)
+        await create_minio_bucket(project_code)
 
         # LDAP Operation
         # Create Project User Group in ldap
@@ -98,7 +96,7 @@ class RestfulProjectsv2:
 async def duplicate_check(project_code: str) -> bool:
     project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
     try:
-        project_client.get(code=project_code)
+        await project_client.get(code=project_code)
     except ProjectNotFoundException:
         return False
     raise APIException(

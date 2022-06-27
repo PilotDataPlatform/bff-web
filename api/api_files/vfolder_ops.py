@@ -161,7 +161,7 @@ class VirtualFolder:
     async def get(self, request: Request):
         payload = {
             "owner": self.current_identity['username'],
-            'container_code': await request.query_params.get('project_code')
+            'container_code': request.query_params.get('project_code')
         }
         response = requests.get(f'{ConfigClass.METADATA_SERVICE}collection/search/', params=payload)
         return response.json(), response.status_code
@@ -176,7 +176,7 @@ class VirtualFolder:
         payload = {
             "owner": self.current_identity['username'],
             **data,
-            'container_code': await request.query_params.get('project_code'),
+            'container_code': request.query_params.get('project_code'),
         }
         payload['container_code'] = payload.pop('project_code')
         response = requests.post(f'{ConfigClass.METADATA_SERVICE}collection/', json=payload)

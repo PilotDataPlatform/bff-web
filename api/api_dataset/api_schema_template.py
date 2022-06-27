@@ -34,7 +34,7 @@ class SchemaTempalte:
     )
     async def get(self, dataset_id: str, template_id: str, request: Request):
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
-        respon = requests.get(url, params=await request.query_params, headers=request.headers)
+        respon = requests.get(url, params=request.query_params, headers=request.headers)
         return respon.json(), respon.status_code
 
     @router.put(

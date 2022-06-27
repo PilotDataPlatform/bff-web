@@ -55,7 +55,7 @@ def has_permission(project_code, resource, zone, operation, current_identity):
         raise Exception(f"Error calling authorize API - {error_msg}")
 
 
-def get_project_role(project_code):
+def get_project_role(project_code, current_identity):
     role = None
     if current_identity["role"] == "admin":
         role = "platform_admin"
@@ -78,7 +78,7 @@ async def get_project_code_from_request(request: Request):
         if not data:
             data = await request.json()
     else:
-        data = await request.json()
+        data = request.query_params
 
     project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
     if "project_code" in data:

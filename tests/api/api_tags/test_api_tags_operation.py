@@ -65,7 +65,7 @@ def test_update_tags_200(test_client, requests_mocker, jwt_token_admin, has_perm
         ],
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post(f"v2/{entity_id}/tags", json=payload, headers=headers)
+    response = test_client.post(f"/v2/{entity_id}/tags", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -85,5 +85,5 @@ def test_update_tags_bad_type_400(test_client, requests_mocker, jwt_token_admin,
         "tags": "tag3"
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post(f"v2/{entity_id}/tags", json=payload, headers=headers)
+    response = test_client.post(f"/v2/{entity_id}/tags", json=payload, headers=headers)
     assert response.status_code == 400

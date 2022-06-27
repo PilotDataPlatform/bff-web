@@ -38,7 +38,7 @@ class NotificationRestful:
     )
     async def get(self, request: Request):
         api_response = APIResponse()
-        params = await request.query_params
+        params = request.query_params
         response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
@@ -74,7 +74,7 @@ class NotificationRestful:
             api_response.set_error_msg("Permission denied")
             api_response.set_code(EAPIResponseCode.forbidden)
             return api_response.json_response()
-        params = await request.query_params
+        params = request.query_params
         body = await request.json()
         response = requests.put(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params, json=body)
         if response.status_code != 200:
@@ -93,7 +93,7 @@ class NotificationRestful:
             api_response.set_error_msg("Permission denied")
             api_response.set_code(EAPIResponseCode.forbidden)
             return api_response.json_response()
-        params = await request.query_params
+        params = request.query_params
         response = requests.delete(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
@@ -111,7 +111,7 @@ class NotificationsRestful:
     )
     async def get(self, request: Request):
         api_response = APIResponse()
-        params = await request.query_params
+        params = request.query_params
         response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notifications', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())

@@ -53,9 +53,9 @@ class TagsAPIV2:
             return api_response.json_response()
 
         entity = get_entity_by_id(entity_id)
-        check_tag_permissions(entity, self.current_identity["username"])
+        check_tag_permissions(entity, self.current_identity)
 
-        project_role = get_project_role(entity["container_code"])
+        project_role = get_project_role(entity["container_code"], self.current_identity)
 
         if not project_role:
             api_response.set_code(EAPIResponseCode.bad_request)

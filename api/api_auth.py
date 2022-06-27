@@ -51,7 +51,7 @@ class LastLoginRestful:
 
 class UserStatus:
     @router.get(
-        '/users/status',
+        '/user/status',
         summary="Get users status given the email",
     )
     def get(self, request: Request):
@@ -83,7 +83,7 @@ class UserAccount:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/users/account',
+        '/user/account',
         summary="user account mangaement",
     )
     async def put(self, request: Request):

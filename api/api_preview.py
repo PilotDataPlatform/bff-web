@@ -41,7 +41,7 @@ class Preview:
         _logger.info("GET preview called in bff")
         api_response = APIResponse()
 
-        data = await request.query_params
+        data = request.query_params
         dataset_id = data.get("dataset_geid")
         dataset_node = get_dataset_by_id(dataset_id)
         file_node = get_entity_by_id(file_id)
@@ -82,7 +82,7 @@ class StreamPreview:
         _logger.info("GET preview called in bff")
         api_response = APIResponse()
 
-        data = await request.query_params
+        data = request.query_params
         dataset_id = data.get("dataset_geid")
         dataset_node = get_dataset_by_id(dataset_id)
         file_node = get_entity_by_id(file_id)

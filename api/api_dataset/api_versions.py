@@ -72,7 +72,7 @@ class PublishStatus:
         api_response = APIResponse()
         try:
             response = requests.get(
-                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish/status', params=await request.query_params
+                ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/publish/status', params=request.query_params
             )
         except Exception as e:
             _logger.info(f'Error calling dataset service: {str(e)}')
@@ -96,7 +96,7 @@ class DownloadPre:
         try:
             response = requests.get(
                 ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/download/pre',
-                params=await request.query_params,
+                params=request.query_params,
                 headers=request.headers
             )
         except Exception as e:
@@ -121,7 +121,7 @@ class DatasetVersions:
         try:
             response = requests.get(
                 ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/versions',
-                params=await request.query_params
+                params=request.query_params
             )
         except Exception as e:
             _logger.info(f'Error calling dataset service: {str(e)}')

@@ -1,6 +1,6 @@
 from fastapi import Request
 
-import jwt as pyjwt
+import jwt
 from config import ConfigClass, SRV_NAMESPACE
 from common import LoggerFactory
 import httpx
@@ -24,10 +24,16 @@ async def jwt_required(request: Request):
     return current_identity
 
 
-def get_current_identity(request: Request):
+def get_token(request: Request):
     token = request.headers.get('Authorization')
-    token = token.split()[-1]
-    payload = pyjwt.decode(token, verify=False)
+    if not token:
+        return None
+    return token.split()[-1]
+
+
+def get_current_identity(request: Request):
+    token = get_token(request)
+    payload = jwt.decode(token, verify=False)
     username: str = payload.get("preferred_username")
 
     if not username:

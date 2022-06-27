@@ -15,6 +15,7 @@
 import requests
 from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -47,8 +48,7 @@ class RestfulManifests:
     async def get(self, request: Request):
         """List attribute templates by project_code."""
         try:
-            response = requests.get(
-                ConfigClass.METADATA_SERVICE + 'template/', params=await request.query_params)
+            response = requests.get(ConfigClass.METADATA_SERVICE + 'template/', params=request.query_params)
             return response.json(), response.status_code
         except Exception as e:
             _logger.error(
@@ -56,7 +56,7 @@ class RestfulManifests:
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=500)
 
     @router.post(
         '/data/manifests',
@@ -75,7 +75,7 @@ class RestfulManifests:
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=500)
 
 
 @cbv.cbv(router)

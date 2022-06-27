@@ -109,8 +109,8 @@ def test_list_templates_admin_200(test_client, requests_mocker, jwt_token_admin)
     requests_mocker.get(ConfigClass.METADATA_SERVICE + 'template/', json=mock_data)
 
     params = {'project_code': 'test_project'}
-    headers = {'Authorization': jwt_token_admin}
-    response = test_client.get('v1/data/manifests', query_string=params, headers=headers)
+    headers = {'Authorization': ""}
+    response = test_client.get('/v1/data/manifests', params=params, headers=headers)
     assert response.status_code == 200
 
 

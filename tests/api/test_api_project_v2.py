@@ -16,6 +16,7 @@ from config import ConfigClass
 from services.permissions_service.utils import has_permission
 from resources.error_handler import APIException
 from uuid import uuid4
+import pytest
 
 
 MOCK_ADMINS = [
@@ -36,8 +37,9 @@ PROJECT_DATA = {
 }
 
 
-def test_create_project_200(
-    test_client,
+@pytest.mark.asyncio
+async def test_create_project_200(
+    test_async_client,
     mocker, requests_mocker,
     httpx_mock,
     jwt_token_admin,
@@ -77,6 +79,8 @@ def test_create_project_200(
         json={},
         status_code=404
     )
+    print(ConfigClass.PROJECT_SERVICE + "/v1/projects/" + payload.get("code"))
+    print("---")
 
     # icon
     project_id = json_response["id"]
@@ -93,8 +97,8 @@ def test_create_project_200(
         json=json_response
     )
 
-    headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v1/projects", json=payload, headers=headers)
+    headers = {"Authorization": ""}
+    response = await test_async_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -138,8 +142,8 @@ def test_create_project_409(
         status_code=200
     )
 
-    headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v1/projects", json=payload, headers=headers)
+    headers = {"Authorization": ""}
+    response = test_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 409
 
 
@@ -176,8 +180,8 @@ def test_create_project_missing_code_400(
         status_code=200
     )
 
-    headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v1/projects", json=payload, headers=headers)
+    headers = {"Authorization": ""}
+    response = test_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 400
 
 
@@ -214,8 +218,8 @@ def test_create_project_bad_code_400(
         status_code=200
     )
 
-    headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v1/projects", json=payload, headers=headers)
+    headers = {"Authorization": ""}
+    response = test_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 400
 
 
@@ -252,7 +256,6 @@ def test_create_project_bad_name_400(
         status_code=200
     )
 
-    headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v1/projects", json=payload, headers=headers)
-    print(response.get_json())
+    headers = {"Authorization": ""}
+    response = test_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 400

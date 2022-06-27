@@ -50,12 +50,12 @@ class AuditLog:
         url = ConfigClass.PROVENANCE_SERVICE + 'audit-logs'
 
         try:
-            page_size = int(await request.query_params.get('page_size', 10))
-            page = int(await request.query_params.get('page', 0))
-            order_by = await request.query_params.get('order_by', 'createTime')
-            order_type = await request.query_params.get('order_type', 'desc')
+            page_size = int(request.query_params.get('page_size', 10))
+            page = int(request.query_params.get('page', 0))
+            order_by = request.query_params.get('order_by', 'createTime')
+            order_type = request.query_params.get('order_type', 'desc')
 
-            query = await request.query_params.get('query', '{}')
+            query = request.query_params.get('query', '{}')
             query = json.loads(query)
 
             resource = None
@@ -139,5 +139,5 @@ class DataLineage:
     )
     async def get(self, request: Request):
         url = ConfigClass.PROVENANCE_SERVICE + "lineage/"
-        response = requests.get(url, params=await request.query_params)
+        response = requests.get(url, params=request.query_params)
         return JSONResponse(content=response.json(), status_code=response.status_code)

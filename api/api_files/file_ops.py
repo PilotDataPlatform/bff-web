@@ -42,7 +42,7 @@ class FileActionTasks:
         dependencies=[Depends(PermissionsCheck("tasks", "*", "view"))]
     )
     async def get(self, request: Request):
-        data = await request.query_params
+        data = request.query_params
         request_params = {**data}
         # here update the project_code to code
         request_params.update({"code": request_params.get("project_code")})

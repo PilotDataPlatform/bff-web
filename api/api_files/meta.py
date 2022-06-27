@@ -39,8 +39,9 @@ class FileDetailBulk:
     )
     async def post(self, request: Request):
         api_response = APIResponse()
+        data = await request.json()
         payload = {
-            "ids": await request.json().get("ids", [])
+            "ids": data.get("ids", [])
         }
         response = requests.get(ConfigClass.METADATA_SERVICE + "items/batch", params=payload)
         if response.status_code != 200:
@@ -76,18 +77,18 @@ class FileMeta:
         """
         api_response = APIResponse()
         _logger.info('Call API for fetching file info')
-        page_size = int(await request.query_params.get('page_size', 25))
-        page = int(await request.query_params.get('page', 0))
-        order_by = await request.query_params.get('order_by', 'created_time')
-        order_type = await request.query_params.get('order_type', 'desc')
-        zone = await request.query_params.get('zone', '')
-        project_code = await request.query_params.get('project_code', '')
-        parent_path = await request.query_params.get('parent_path', '')
-        source_type = await request.query_params.get('source_type', '')
+        page_size = int(request.query_params.get('page_size', 25))
+        page = int(request.query_params.get('page', 0))
+        order_by = request.query_params.get('order_by', 'created_time')
+        order_type = request.query_params.get('order_type', 'desc')
+        zone = request.query_params.get('zone', '')
+        project_code = request.query_params.get('project_code', '')
+        parent_path = request.query_params.get('parent_path', '')
+        source_type = request.query_params.get('source_type', '')
 
-        name = await request.query_params.get('name', '')
-        owner = await request.query_params.get('owner', '')
-        archived = await request.query_params.get('archived', False, type=lambda v: v.lower() == 'true')
+        name = request.query_params.get('name', '')
+        owner = request.query_params.get('owner', '')
+        archived = request.query_params.get('archived', False)
 
         if source_type not in ["trash", "project", "folder", "collection"]:
             _logger.error('Invalid zone')
@@ -116,7 +117,7 @@ class FileMeta:
             payload["owner"] = owner.replace("%", "\%") + "%",
         payload["archived"] = archived
 
-        project_role = get_project_role(project_code)
+        project_role = get_project_role(project_code, self.current_identity)
 
         if source_type == "folder":
             payload["parent_path"] = parent_path
@@ -125,7 +126,7 @@ class FileMeta:
         elif source_type == "project":
             payload["parent_path"] = None
         elif source_type == "collection":
-            collection_id = await request.query_params.get("parent_id")
+            collection_id = request.query_params.get("parent_id")
             if not collection_id:
                 api_response.set_code(EAPIResponseCode.bad_request)
                 api_response.set_error_msg('parent_id required for collection')
