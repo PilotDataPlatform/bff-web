@@ -114,6 +114,10 @@ class Settings(BaseSettings):
     LDAP_DC1: str
     LDAP_DC2: str
     LDAP_objectclass: str
+    LDAP_USER_OBJECTCLASS: str
+    LDAP_SET_GIDNUMBER: bool = False
+    LDAP_GID_LOWER_BOUND: int = 30000
+    LDAP_GID_UPPER_BOUND: int = 40000
 
     # Domain
     SITE_DOMAIN: str
@@ -138,6 +142,7 @@ class Settings(BaseSettings):
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     MINIO_HTTPS: bool = False
+    MINIO_BUCKET_ENCRYPTION: bool = True
 
     RESOURCES: List[str] = ["SuperSet", "Guacamole"]
 

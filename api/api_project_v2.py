@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import re
 from uuid import uuid4
+import random
 
 import ldap
 import ldap.modlist as modlist
@@ -156,8 +157,13 @@ async def create_minio_bucket(project_code: str) -> None:
         for bucket_prefix in prefixs:
             bucket_name = bucket_prefix + project_code
             await boto_client.create_bucket(bucket_name)
-            await boto_client.create_bucket_encryption(bucket_name)
             await boto_client.set_bucket_versioning(bucket_name)
+
+            if ConfigClass.MINIO_BUCKET_ENCRYPTION:
+                _logger.info('Bucket encryption enabled, encrypting %s' % bucket_name)
+                await boto_client.create_bucket_encryption(bucket_name)
+            else:
+                _logger.warn('Bucket encryption is not enabled, not encrypting %s' % bucket_name)
 
             mc = await get_minio_policy_client(
                 ConfigClass.MINIO_ENDPOINT,
@@ -187,7 +193,7 @@ def ldap_create_user_group(code, description):
         conn.simple_bind_s(ConfigClass.LDAP_ADMIN_DN,
                            ConfigClass.LDAP_ADMIN_SECRET)
 
-        dn = "cn={}-{},ou=Gruppen,ou={},dc={},dc={}".format(
+        dn = "cn={}-{},ou={},dc={},dc={}".format(
             ConfigClass.AD_PROJECT_GROUP_PREFIX,
             code,
             ConfigClass.LDAP_OU,
@@ -199,9 +205,17 @@ def ldap_create_user_group(code, description):
         # Please remember to convert all string to utf-8
         objectclass = [ConfigClass.LDAP_objectclass.encode('utf-8')]
         attrs = {'objectclass': objectclass,
-                 'sAMAccountName': f'{ConfigClass.AD_PROJECT_GROUP_PREFIX}-{code}'.encode('utf-8')}
+                 ConfigClass.LDAP_USER_OBJECTCLASS: f'{ConfigClass.AD_PROJECT_GROUP_PREFIX}-{code}'.encode('utf-8')}
+
         if description:
             attrs['description'] = description.encode('utf-8')
+
+        # TODO: Do a preflight check here to see if GID is already taken
+        # before continuing by making use of LDAP search functionalities
+        if ConfigClass.LDAP_SET_GIDNUMBER:
+            gid = random.randint(ConfigClass.LDAP_GID_LOWER_BOUND, ConfigClass.LDAP_GID_UPPER_BOUND)
+            attrs['gidNumber'] = str(gid).encode('utf-8')
+
         ldif = modlist.addModlist(attrs)
         conn.add_s(dn, ldif)
     except Exception as error:
