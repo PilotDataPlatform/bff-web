@@ -15,6 +15,7 @@
 import asyncio
 import re
 from uuid import uuid4
+import random
 
 import ldap
 import ldap.modlist as modlist
@@ -211,8 +212,16 @@ def ldap_create_user_group(code, description):
         objectclass = [ConfigClass.LDAP_objectclass.encode('utf-8')]
         attrs = {'objectclass': objectclass,
                  ConfigClass.LDAP_USER_OBJECTCLASS: f'{ConfigClass.AD_PROJECT_GROUP_PREFIX}-{code}'.encode('utf-8')}
+        
         if description:
             attrs['description'] = description.encode('utf-8')
+
+        # TODO: Do a preflight check here to see if GID is already taken
+        # before continuing by making use of LDAP search functionalities
+        if ConfigClass.LDAP_SET_GIDNUMBER:
+            gid = random.randint(ConfigClass.LDAP_GID_LOWER_BOUND, ConfigClass.LDAP_GID_UPPER_BOUND)
+            attrs['gidNumber'] = str(gid).encode('utf-8')
+
         ldif = modlist.addModlist(attrs)
         conn.add_s(dn, ldif)
     except Exception as error:
