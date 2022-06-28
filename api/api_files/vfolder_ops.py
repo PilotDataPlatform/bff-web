@@ -20,6 +20,7 @@ from .utils import get_collection_by_id
 import requests
 import json
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -164,7 +165,7 @@ class VirtualFolder:
             'container_code': request.query_params.get('project_code')
         }
         response = requests.get(f'{ConfigClass.METADATA_SERVICE}collection/search/', params=payload)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.post(
         '/collections',
@@ -180,7 +181,7 @@ class VirtualFolder:
         }
         payload['container_code'] = payload.pop('project_code')
         response = requests.post(f'{ConfigClass.METADATA_SERVICE}collection/', json=payload)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)

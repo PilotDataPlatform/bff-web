@@ -49,7 +49,7 @@ class RestfulManifests:
         """List attribute templates by project_code."""
         try:
             response = requests.get(ConfigClass.METADATA_SERVICE + 'template/', params=request.query_params)
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
@@ -68,7 +68,7 @@ class RestfulManifests:
         try:
             response = requests.post(
                 ConfigClass.METADATA_SERVICE + 'template/', json=await request.json())
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
@@ -100,14 +100,14 @@ class RestfulManifest:
 
             for attr in res['result']['attributes']:
                 attr['manifest_id'] = res['result']['id']
-            return res, response.status_code
+            return JSONResponse(content=res, status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
     @router.put(
         '/data/manifest/{manifest_id}',
@@ -119,7 +119,7 @@ class RestfulManifest:
         data = await request.json()
         project_code = data.get('project_code')
         # Permissions check
-        if not has_permission(project_code, 'file_attribute_template', '*', 'update'):
+        if not has_permission(project_code, 'file_attribute_template', '*', 'update', self.current_identity):
             my_res.set_code(EAPIResponseCode.forbidden)
             my_res.set_result('Permission Denied')
             return my_res.json_response()
@@ -146,14 +146,14 @@ class RestfulManifest:
                 ConfigClass.METADATA_SERVICE + 'template/', params=params, json=data)
             res = response.json()
             res['result'] = result
-            return res, response.status_code
+            return JSONResponse(content=res, status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
     @router.delete(
         '/data/manifest/{manifest_id}',
@@ -172,7 +172,7 @@ class RestfulManifest:
 
         project_code = res['project_code']
         # Permissions check
-        if not has_permission(project_code, 'file_attribute_template', '*', 'delete'):
+        if not has_permission(project_code, 'file_attribute_template', '*', 'delete', self.current_identity):
             my_res.set_code(EAPIResponseCode.forbidden)
             my_res.set_result('Permission Denied')
             return my_res.json_response()
@@ -212,7 +212,7 @@ class RestfulManifest:
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
 
 @cbv.cbv(router)
@@ -245,7 +245,7 @@ class FileAttributes:
             zone = 'greenroom'
         else:
             zone = 'core'
-        if not has_permission(entity['container_code'], 'file_attribute', zone, 'update'):
+        if not has_permission(entity['container_code'], 'file_attribute', zone, 'update', self.current_identity):
             api_response.set_code(EAPIResponseCode.forbidden)
             api_response.set_result('Permission Denied')
             return api_response.json_response()
@@ -272,14 +272,14 @@ class FileAttributes:
             res['result'] = {**res['result'],
                              **{f'attr_{attr}': attributes_update[attr] for attr in attributes_update}}
 
-            return res, response.status_code
+            return JSONResponse(content=res, status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
 
 @cbv.cbv(router)
@@ -305,14 +305,14 @@ class ImportManifest:
                 ConfigClass.METADATA_SERVICE + 'template/', json=payload)
             res = response.json()
             res['result'] = 'Success'
-            return res, response.status_code
+            return JSONResponse(content=res, status_code=response.status_code)
         except Exception as e:
             _logger.error(
                 f'Error when calling metadata service: {str(e)}')
             error_msg = {
                 'result': str(e)
             }
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
 @cbv.cbv(router)
 class FileManifestQuery:
@@ -348,7 +348,13 @@ class FileManifestQuery:
                         zone = 'greenroom'
                     else:
                         zone = 'core'
-                    if not has_permission(entity['container_code'], 'file_attribute_template', zone, 'view'):
+                    if not has_permission(
+                        entity['container_code'],
+                        'file_attribute_template',
+                        zone,
+                        'view',
+                        self.current_identity
+                    ):
                         api_response.set_code(EAPIResponseCode.forbidden)
                         api_response.set_result('Permission Denied')
                         return api_response.json_response()
@@ -384,7 +390,8 @@ class FileManifestQuery:
         except Exception as e:
             _logger.error(f'Error when calling metadata service: {str(e)}')
             error_msg = {'result': str(e)}
-            return error_msg, 500
+            return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
+
 
 @cbv.cbv(router)
 class AttachAttributes:

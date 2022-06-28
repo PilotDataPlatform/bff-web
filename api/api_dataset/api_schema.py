@@ -15,6 +15,7 @@
 import requests
 from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 from services.permissions_service.decorators import DatasetPermission
@@ -47,7 +48,7 @@ class SchemaCreate:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -70,7 +71,7 @@ class Schema:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.get(
         '/dataset/{dataset_id}/schema/{schema_id}',
@@ -87,7 +88,7 @@ class Schema:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/schema/{schema_id}',
@@ -106,7 +107,7 @@ class Schema:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -130,4 +131,4 @@ class SchemaList:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)

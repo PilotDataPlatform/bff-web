@@ -19,14 +19,9 @@ from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 
-#api_resource = module_api.namespace(
-#    'Notification', description='Notification API', path='/v1')
+
 router = APIRouter(tags=["Notifications"])
 
-
-#def api_registry(self):
-#    api_resource.add_resource(
-#        self.NotificationRestful, '/notification')
 
 @cbv.cbv(router)
 class NotificationRestful:
@@ -102,6 +97,7 @@ class NotificationRestful:
         return api_response.json_response()
 
 
+@cbv.cbv(router)
 class NotificationsRestful:
     current_identity: dict = Depends(jwt_required)
 

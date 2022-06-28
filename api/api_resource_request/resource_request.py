@@ -12,246 +12,236 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from flask import request
 import requests
-from datetime import datetime
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi_utils import cbv
+from app.auth import jwt_required
 import math
 
-from api import module_api
 from models.api_response import APIResponse, EAPIResponseCode
-from models.api_meta_class import MetaAPI
-from models.api_resource_request import ResourceRequest, db
 from config import ConfigClass
 from services.notifier_services.email_service import SrvEmail
-from common import LoggerFactory
-from services.permissions_service.decorators import permissions_check
+from common import LoggerFactory, ProjectClient
+from services.permissions_service.decorators import PermissionsCheck
 from resources.error_handler import APIException
 
-api_resource = module_api.namespace('ResourceRequest', description='Resource Request API', path='/v1')
 
 _logger = LoggerFactory('api_resource_request').get_logger()
+router = APIRouter(tags=["Resource Request"])
 
 
-class APIResourceRequest(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(self.ResourceRequestComplete, '/resource-request/<id>/complete')
-        api_resource.add_resource(self.ResourceRequest, '/resource-request/<id>/')
-        api_resource.add_resource(self.ResourceRequests, '/resource-requests')
-        api_resource.add_resource(self.ResourceRequestsQuery, '/resource-requests/query')
+@cbv.cbv(router)
+class ResourceRequest:
+    current_identity: dict = Depends(jwt_required)
 
-    class ResourceRequest(Resource):
-        @jwt_required()
-        @permissions_check('resource_request', '*', 'view')
-        def get(self, id):
-            """
-             Get a single resource request
-            """
-            api_response = APIResponse()
-            _logger.info("ResourceRequest get called")
+    @router.get(
+        '/resource-request/{request_id}/',
+        summary="Get a single resource request",
+        dependencies=[Depends(PermissionsCheck("resource_request", "*", "view"))]
+    )
+    async def get(self, request_id: str):
+        """
+         Get a single resource request
+        """
+        api_response = APIResponse()
+        _logger.info("ResourceRequest get called")
 
-            if current_identity["role"] != "admin":
-                api_response.set_error_msg("Permissions denied")
-                api_response.set_code(EAPIResponseCode.forbidden)
-                return api_response.to_dict, api_response.code
+        if self.current_identity["role"] != "admin":
+            api_response.set_error_msg("Permissions denied")
+            api_response.set_code(EAPIResponseCode.forbidden)
+            return api_response.json_response()
 
-            try:
-                resource_request = db.session.query(ResourceRequest).get(id)
-                if not resource_request:
-                    api_response.set_code(EAPIResponseCode.not_found)
-                    api_response.set_result("Resource Request not found")
-                    return api_response.to_dict, api_response.code
-            except Exception as e:
-                _logger.error("Psql Error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Psql Error: " + str(e))
-                return api_response.to_dict, api_response.code
+        try:
+            # TODO call resource request API
+            pass
+        except Exception as e:
+            _logger.error("Error calling resource request API: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Psql Error: " + str(e))
+            return api_response.json_response()
+        api_response.set_result("")
+        return api_response.json_response()
+
+    @router.delete(
+        '/resource-request/{request_id}/',
+        summary="Delete a single resource request",
+        dependencies=[Depends(PermissionsCheck("resource_request", "*", "delete"))]
+    )
+    async def delete(self, request_id: str):
+        api_response = APIResponse()
+        _logger.info("ResourceRequest get called")
+
+        try:
+            # TODO call resource request API
+            pass
+        except Exception as e:
+            _logger.error("Error calling resource request API: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Psql Error: " + str(e))
+            return api_response.json_response()
+        api_response.set_result('success')
+        return api_response.json_response()
+
+
+@cbv.cbv(router)
+class ResourceRequestComplete:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.put(
+        '/resource-request/{request_id}/complete',
+        summary="Update an existing resource request as complete",
+        dependencies=[Depends(PermissionsCheck("resource_request", "*", "update"))]
+    )
+    async def put(self, request_id: str):
+        """
+            Update an existing resource request as complete
+        """
+        api_response = APIResponse()
+        _logger.info("ResourceRequestComplete put called")
+
+        try:
+            # TODO call resource request API
+            resource_request = {}
+            pass
+        except Exception as e:
+            _logger.error("Error calling resource request API: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Psql Error: " + str(e))
+            return api_response.json_response()
+
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=resource_request.project_geid)
+
+        template_kwargs = {
+            "current_user": self.current_identity["username"],
+            "request_for": resource_request.request_for,
+            "project_name": resource_request.project_name,
+            "project_code": project.code,
+            "admin_email": ConfigClass.EMAIL_SUPPORT,
+        }
+        try:
+            email_sender = SrvEmail()
+            email_sender.send(
+                f"Access granted to {resource_request.request_for}",
+                [resource_request.email],
+                msg_type='html',
+                template="resource_request/approved.html",
+                template_kwargs=template_kwargs,
+            )
+            _logger.info(f"Email sent to {resource_request.email}")
+        except Exception as e:
+            _logger.error("Error sending email: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Error sending email: " + str(e))
+            return api_response.json_response()
+
+        api_response.set_result("")
+        return api_response.json_response()
+
+
+@cbv.cbv(router)
+class ResourceRequestsQuery:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/resource-requests/query',
+        summary="List resource requests",
+    )
+    async def post(self, request: Request):
+        """
+            List resource requests
+        """
+        _logger.info("ResourceRequestsQuery post called")
+        api_response = APIResponse()
+        data = await request.json()
+
+        page = int(data.get('page', 0))
+        # use 0 start for consitency with other pagination systems
+        page = page + 1
+        page_size = int(data.get('page_size', 25))
+        order_by = data.get('order_by', "request_date")
+        order_type = data.get('order_type', "asc")
+        filters = data.get('filters', {})
+
+        try:
+            if self.current_identity["role"] != "admin":
+                filters["username"] = self.current_identity["username"]
+
+            # TODO add resource request call
+        except Exception as e:
+            _logger.error("Psql error: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Psql error: " + str(e))
+            return api_response.json_response()
+
+        total = 0
+        api_response.set_page(page - 1)
+        api_response.set_num_of_pages(math.ceil(total / page_size))
+        api_response.set_total(total)
+        api_response.set_result([])
+        return api_response.json_response()
+
+
+@cbv.cbv(router)
+class ResourceRequests:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/resource-requests',
+        summary="Create a new resource request, send email notification",
+        dependencies=[Depends(PermissionsCheck("resource_request", "*", "create"))]
+    )
+    async def post(self, request: Request):
+
+        """
+            Create a new resource request, send email notification
+        """
+        _logger.info("ResourceRequests post called")
+        api_response = APIResponse()
+        data = await request.json()
+        try:
+            # validate payload
+            is_valid, res, code = validate_payload(data)
+            if not is_valid:
+                return res, code
+            else:
+                model_data = res
+
+            #duplicate_check(data)
+
+            # get user node
+            #user_node = get_user_node(data["user_id"])
+
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = await project_client.get(id=data["project_geid"])
+
+            model_data["username"] = self.current_identity["username"]
+            model_data["email"] = self.current_identity["email"]
+            model_data["project_name"] = project.name
+
+            user_role = None
+            for role in get_realm_roles(self.current_identity["username"]):
+                if role["name"].split("-")[0] == project.code:
+                    user_role = role["name"].split("-")[-1]
+                    break
+
+            # TODO call resource request API
+            resource_request = {}
+
+            # send_email
+            is_email_sent, email_res, code = send_email(resource_request, project, user_role)
+            if not is_email_sent:
+                return email_res, code
             api_response.set_result(resource_request.to_dict())
-            return api_response.to_dict, api_response.code
+            return api_response.json_response()
 
-        @jwt_required()
-        @permissions_check('resource_request', '*', 'delete')
-        def delete(self, id):
-            api_response = APIResponse()
-            _logger.info("ResourceRequest get called")
-
-            try:
-                resource_request = db.session.query(ResourceRequest).get(id)
-                if not resource_request:
-                    api_response.set_code(EAPIResponseCode.not_found)
-                    api_response.set_result("Resource Request not found")
-                db.session.delete(resource_request)
-                db.session.commit()
-            except Exception as e:
-                _logger.error("Psql Error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Psql Error: " + str(e))
-                return api_response.to_dict, api_response.code
-            api_response.set_result('success')
-            return api_response.to_dict, api_response.code
-
-    class ResourceRequestComplete(Resource):
-        @jwt_required()
-        @permissions_check('resource_request', '*', 'update')
-        def put(self, id):
-            """
-                Update an existing resource request as complete
-            """
-            api_response = APIResponse()
-            _logger.info("ResourceRequestComplete put called")
-
-            try:
-                resource_request = db.session.query(ResourceRequest).get(id)
-                if not resource_request:
-                    api_response.set_code(EAPIResponseCode.not_found)
-                    api_response.set_result("Resource Request not found")
-                    return api_response.to_dict, api_response.code
-                resource_request.active = False
-                resource_request.complete_date = datetime.utcnow()
-                db.session.add(resource_request)
-                db.session.commit()
-                db.session.refresh(resource_request)
-            except Exception as e:
-                _logger.error("Psql Error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Psql Error: " + str(e))
-                return api_response.to_dict, api_response.code
-
-            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = project_client.get(id=resource_request.project_geid)
-
-            template_kwargs = {
-                "current_user": current_identity["username"],
-                "request_for": resource_request.request_for,
-                "project_name": resource_request.project_name,
-                "project_code": project.code,
-                "admin_email": ConfigClass.EMAIL_SUPPORT,
-            }
-            try:
-                email_sender = SrvEmail()
-                email_sender.send(
-                    f"Access granted to {resource_request.request_for}",
-                    [resource_request.email],
-                    msg_type='html',
-                    template="resource_request/approved.html",
-                    template_kwargs=template_kwargs,
-                )
-                _logger.info(f"Email sent to {resource_request.email}")
-            except Exception as e:
-                _logger.error("Error sending email: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Error sending email: " + str(e))
-                return api_response.to_dict, api_response.code
-
-            api_response.set_result(resource_request.to_dict())
-            return api_response.to_dict, api_response.code
-
-    class ResourceRequestsQuery(Resource):
-        @jwt_required()
-        def post(self):
-            """
-                List resource requests
-            """
-            _logger.info("ResourceRequestsQuery post called")
-            api_response = APIResponse()
-            data = request.get_json()
-
-            page = int(data.get('page', 0))
-            # use 0 start for consitency with other pagination systems
-            page = page + 1
-            page_size = int(data.get('page_size', 25))
-            order_by = data.get('order_by', "request_date")
-            order_type = data.get('order_type', "asc")
-            filters = data.get('filters', {})
-
-            try:
-                query = None
-                if current_identity["role"] != "admin":
-                    filters["username"] = current_identity["username"]
-
-                for key, value in filters.items():
-                    query = db.session.query(ResourceRequest).filter(getattr(ResourceRequest, key).contains(value))
-                if not query:
-                    query = db.session.query(ResourceRequest)
-                if order_by and order_type == "desc":
-                    query = query.order_by(getattr(ResourceRequest, order_by).desc())
-                else:
-                    query = query.order_by(getattr(ResourceRequest, order_by).asc())
-                resource_requests = query.paginate(page=page, per_page=page_size, error_out=False)
-            except Exception as e:
-                _logger.error("Psql error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Psql error: " + str(e))
-                return api_response.to_dict, api_response.code
-
-            total = resource_requests.total
-            results = []
-            for resource in resource_requests.items:
-                results.append(resource.to_dict())
-            api_response.set_page(page - 1)
-            api_response.set_num_of_pages(math.ceil(total / page_size))
-            api_response.set_total(total)
-            api_response.set_result(results)
-            return api_response.to_dict, api_response.code
-
-    class ResourceRequests(Resource):
-
-        @jwt_required()
-        @permissions_check('resource_request', '*', 'create')
-        def post(self):
-
-            """
-                Create a new resource request, send email notification
-            """
-            _logger.info("ResourceRequests post called")
-            api_response = APIResponse()
-            data = request.get_json()
-            try:
-                # validate payload
-                is_valid, res, code = validate_payload(data)
-                if not is_valid:
-                    return res, code
-                else:
-                    model_data = res
-
-                duplicate_check(data)
-
-                # get user node
-                user_node = get_user_node(data["user_id"])
-
-                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                project = project_client.get(id=data["project_geid"])
-
-                model_data["username"] = user_node["username"]
-                model_data["email"] = user_node["email"]
-                model_data["project_name"] = project.name
-
-                user_role = None
-                for role in get_realm_roles(user_node["username"]):
-                    if role["name"].split("-")[0] == project.code:
-                        user_role = role["name"].split("-")[-1]
-                        break
-
-                is_db, resource_request_res, code = db_resource_request(model_data)
-                if not is_db:
-                    return resource_request_res, code
-                else:
-                    resource_request = resource_request_res
-
-                # send_email
-                is_email_sent, email_res, code = send_email(resource_request, project, user_role)
-                if not is_email_sent:
-                    return email_res, code
-                api_response.set_result(resource_request.to_dict())
-                return api_response.to_dict, api_response.code
-
-            except Exception as e:
-                raise e
-                _logger.error("Psql error: " + str(e))
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result("Psql error: " + str(e))
-                return api_response.to_dict, api_response.code
+        except Exception as e:
+            raise e
+            _logger.error("Psql error: " + str(e))
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result("Psql error: " + str(e))
+            return api_response.json_response()
 
 
 def validate_payload(data):
@@ -272,64 +262,14 @@ def validate_payload(data):
     return True, model_data, 200
 
 
-def duplicate_check(data):
-    api_response = APIResponse()
-    try:
-        resource_requests = db.session.query(ResourceRequest).filter_by(
-            user_id=data["user_id"],
-            project_geid=data["project_geid"],
-            request_for=data["request_for"],
-        )
-        if resource_requests.count() > 0:
-            if resource_requests.first().active:
-                error_msg = "Request already exists"
-                raise APIException(status_code=EAPIResponseCode.conflict.value, error_msg=error_msg)
-            else:
-                error_msg = "Request already completed"
-                raise APIException(status_code=EAPIResponseCode.conflict.value, error_msg=error_msg)
-    except Exception as e:
-        _logger.error("Psql error: " + str(e))
-        raise APIException(status_code=EAPIResponseCode.internal_error.value, error_msg="Psql error:" + str(e))
-
-
-def get_user_node(user_id: str) -> dict:
-    api_response = APIResponse()
-    payload = {
-        "user_id": user_id,
-    }
-    response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=payload)
-    if not response.json()["result"]:
-        raise APIException(status_code=EAPIResponseCode.not_found.value, error_msg="User not found in keycloak")
-    user_node = response.json()["result"]
-
-    if current_identity["username"] != user_node["username"]:
-        raise APIException(status_code=EAPIRespnseCode.forbidden.value, error_msg="Permission Denied")
-    return user_node
-
-
 def get_realm_roles(username: str) -> list:
     payload = {
         "username": username,
     }
     response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params=payload)
     if not response.json():
-        raise APIException(status_code=EAPIRespnseCode.not_found.value, error_msg="User not found in keycloak")
+        raise APIException(status_code=EAPIResponseCode.not_found.value, error_msg="User not found in keycloak")
     return response.json()["result"]
-
-
-def db_resource_request(model_data):
-    api_response = APIResponse()
-    try:
-        resource_request = ResourceRequest(**model_data)
-        db.session.add(resource_request)
-        db.session.commit()
-        db.session.refresh(resource_request)
-        return True, resource_request, 200
-    except Exception as e:
-        _logger.error("Psql error: " + str(e))
-        api_response.set_code(EAPIResponseCode.internal_error)
-        api_response.set_result("Psql Error: " + str(e))
-        return False, api_response.to_dict, api_response.code
 
 
 def send_email(resource_request, project, user_role):

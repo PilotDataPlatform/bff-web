@@ -15,6 +15,7 @@
 import requests
 from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -45,7 +46,7 @@ class FileDetailBulk:
         }
         response = requests.get(ConfigClass.METADATA_SERVICE + "items/batch", params=payload)
         if response.status_code != 200:
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         file_node = response.json()["result"]
 
         for file_node in response.json()["result"]:
@@ -53,14 +54,14 @@ class FileDetailBulk:
                 zone = "greenroom"
             else:
                 zone = "core"
-            if not has_permission(file_node["container_code"], "file", zone, "view"):
+            if not has_permission(file_node["container_code"], "file", zone, "view", self.current_identity):
                 api_response.set_code(EAPIResponseCode.forbidden)
                 api_response.set_error_msg("Permission Denied")
                 return api_response.json_response()
         result = response.json()
         for entity in result["result"]:
             entity["zone"] = "greenroom" if entity["zone"] == 0 else "core"
-        return result, response.status_code
+        return JSONResponse(content=result, status_code=result.status_code)
 
 
 @cbv.cbv(router)
@@ -142,7 +143,7 @@ class FileMeta:
                         api_response.set_error_msg('Permission Denied')
                         return api_response.json_response()
 
-        if not has_permission(project_code, "file", zone.lower(), "view"):
+        if not has_permission(project_code, "file", zone.lower(), "view", self.current_identity):
             username = self.current_identity["username"]
             _logger.info(f"Permissions denied for user {username} in meta listing")
             api_response.set_code(EAPIResponseCode.forbidden)
@@ -160,4 +161,4 @@ class FileMeta:
         result = response.json()
         for entity in result["result"]:
             entity["zone"] = "greenroom" if entity["zone"] == 0 else "core"
-        return result, response.status_code
+        return JSONResponse(content=result, status_code=response.status_code)

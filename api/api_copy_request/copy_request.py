@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -38,7 +39,7 @@ class CopyRequest:
     async def get(self, project_code: str, request: Request):
         api_response = APIResponse()
         data = request.query_params
-        if get_project_role(project_code) == "collaborator":
+        if get_project_role(project_code, self.current_identity) == "collaborator":
             data["submitted_by"] = self.current_identity["username"]
 
         try:
@@ -46,7 +47,7 @@ class CopyRequest:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.post(
         '/request/copy/{project_code}',
@@ -70,7 +71,7 @@ class CopyRequest:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.post(
         '/request/copy/{project_code}',
@@ -88,7 +89,7 @@ class CopyRequest:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -109,7 +110,7 @@ class CopyRequestFiles:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.put(
         '/request/copy/{project_code}/files',
@@ -131,7 +132,7 @@ class CopyRequestFiles:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.patch(
         '/request/copy/{project_code}/files',
@@ -153,7 +154,7 @@ class CopyRequestFiles:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -175,4 +176,4 @@ class CopyRequestPending:
         except Exception as e:
             api_response.set_error_msg(f"Error calling request copy API: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)

@@ -16,6 +16,7 @@
 import httpx
 from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -34,7 +35,7 @@ class FolderCreation:
     current_identity: dict = Depends(jwt_required)
     _logger = LoggerFactory('api_folder_creation').get_logger()
 
-    @router.get(
+    @router.post(
         '/containers/{project_id}/folder',
         summary="List workbench entries",
         dependencies=[Depends(PermissionsCheck("file", "*", "upload"))]
@@ -86,4 +87,4 @@ class FolderCreation:
 
         with httpx.Client() as client:
             response = client.post(ConfigClass.METADATA_SERVICE + "item/", json=payload)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)

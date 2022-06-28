@@ -16,8 +16,9 @@ import math
 from datetime import datetime
 
 import requests
-from common import LoggerFactory, ProjectClientSync
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -41,7 +42,7 @@ class Users:
         summary="List all users in platform",
         dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
     )
-    def get(self, request: Request):
+    async def get(self, request: Request):
         '''
         This method allow user to fetch all registered users in the platform.
         '''
@@ -49,14 +50,14 @@ class Users:
         api_response = APIResponse()
         try:
             data = {
-                "username": request.args.get("name", None),
-                "email": request.args.get("email", None),
-                "order_by": request.args.get("order_by", None),
-                "order_type": request.args.get("order_type", None),
-                "page": request.args.get("page", 0),
-                "page_size": request.args.get("page_size", 25),
-                "status": request.args.get("status", None),
-                "role": request.args.get("role", None),
+                "username": request.query_params.get("name", None),
+                "email": request.query_params.get("email", None),
+                "order_by": request.query_params.get("order_by", None),
+                "order_type": request.query_params.get("order_type", None),
+                "page": request.query_params.get("page", 0),
+                "page_size": request.query_params.get("page_size", 25),
+                "status": request.query_params.get("status", None),
+                "role": request.query_params.get("role", None),
             }
             # remove empty values
             data = {k: v for k, v in data.items() if v}
@@ -65,7 +66,7 @@ class Users:
             api_response.set_error_msg(f"Error get users from auth service: {str(e)}")
             api_response.set_code(EAPIResponseCode.internal_error)
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -73,7 +74,7 @@ class ContainerAdmins:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/containers/{project_id}/admins"',
+        '/containers/{project_id}/admins',
         summary="List all admins in a project",
         dependencies=[Depends(PermissionsCheck("project", "*", "view"))]
     )
@@ -81,8 +82,8 @@ class ContainerAdmins:
         '''
         This method allow user to fetch all admins under a specific project with permissions.
         '''
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(project_id)
 
         # fetch admins of the project
         payload = {
@@ -90,9 +91,10 @@ class ContainerAdmins:
             "status": "active",
         }
         response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
+@cbv.cbv(router)
 class ContainerUsers:
     current_identity: dict = Depends(jwt_required)
 
@@ -101,14 +103,14 @@ class ContainerUsers:
         summary="List all users in a project",
         dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
     )
-    def get(self, project_id: str, request: Request):
+    async def get(self, project_id: str, request: Request):
         '''
         This method allow user to fetch all users under a specific dataset with permissions.
         '''
         data = request.query_params
         _logger.info('Calling API for fetching all users under dataset {}'.format(str(project_id)))
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         # fetch admins of the project
         payload = {
@@ -122,14 +124,15 @@ class ContainerUsers:
             "order_type": data.get("order_type", "desc"),
         }
         response = requests.post(ConfigClass.AUTH_SERVICE + "admin/roles/users", json=payload)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
+@cbv.cbv(router)
 class UserContainerQuery:
     current_identity: dict = Depends(jwt_required)
 
     @router.post(
-        '/users/{username}/containers"',
+        '/users/{username}/containers',
         summary="Query user's containers",
         dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
     )
@@ -196,9 +199,9 @@ class UserContainerQuery:
             project_codes = ",".join(list(set(i.split("-")[0] for i in roles)))
             payload["code_any"] = project_codes
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project_result = project_client.search(**payload)
-        projects = [i.json() for i in project_result["result"]]
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project_result = await project_client.search(**payload)
+        projects = [await i.json() for i in project_result["result"]]
 
         if user_node["role"] != "admin":
             for project in projects:
@@ -213,4 +216,4 @@ class UserContainerQuery:
             "page": project_result["page"],
             "num_of_pages": int(math.ceil(project_result["total"] / payload["page_size"])),
         }
-        return results, EAPIResponseCode.success.value
+        return results

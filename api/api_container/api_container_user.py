@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 from common import LoggerFactory, ProjectClientSync
@@ -51,7 +52,7 @@ class ContainerUser:
         role = await request.json().get("role", None)
         if role is None:
             logger.error('Error: user\'s role is required.')
-            return {'result': "User's role is required."},
+            return {'result': "User's role is required."}
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = project_client.get(id=project_id)
@@ -68,7 +69,7 @@ class ContainerUser:
                 error = f'Error adding user to group {ConfigClass.AD_PROJECT_GROUP_PREFIX}{project.code}: ' + str(
                     error)
                 logger.info(error)
-                return {'result': error}, 500
+                return JSONResponse(content={'result': error}, status_code=500)
 
         # keycloak user role update
         is_updated, response, code = keycloak_user_role_update(
@@ -80,12 +81,13 @@ class ContainerUser:
         )
         if not is_updated:
             return response, code
+            return JSONResponse(content=response, status_code=code)
 
         # send email to user
         title = f"Project {project.code} Notification: New Invitation"
         template = "user_actions/invite.html"
         send_email_user(user, project.name, username, role, title, template, self.current_identity)
-        return {'result': 'success'}, 200
+        return JSONResponse(content={'result': 'success'}, status_code=200)
 
     @router.put(
         '/containers/{project_id}/users/{username}',
@@ -108,7 +110,7 @@ class ContainerUser:
             current_identity=self.current_identity
         )
         if not is_valid:
-            return res_valid, code
+            return JSONResponse(content=res_valid, status_code=code)
 
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = project_client.get(id=project_id)
@@ -126,13 +128,13 @@ class ContainerUser:
             self.current_identity["username"]
         )
         if not is_updated:
-            return response, code
+            return JSONResponse(content=response, status_code=code)
 
         # send email
         title = f"Project {project.name} Notification: Role Modified"
         template = "role/update.html"
         send_email_user(user, project.name, username, new_role, title, template, self.current_identity)
-        return {'result': 'success'}, 200
+        return JSONResponse(content={'result': 'success'}, status_code=200)
 
     @router.delete(
         '/containers/{project_id}/users/{username}',
@@ -173,7 +175,7 @@ class ContainerUser:
             project.code,
             self.current_identity["username"]
         )
-        return {'result': 'success'}, 200
+        return {'result': 'success'}
 
 
 def validate_payload(old_role, new_role, username, current_identity):

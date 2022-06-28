@@ -25,7 +25,7 @@ def check_tag_permissions(entity: dict, current_identity: dict):
     else:
         zone = 'core'
 
-    if not has_permission(entity["container_code"], 'tags', zone, 'create'):
+    if not has_permission(entity["container_code"], 'tags', zone, 'create', current_identity):
         raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
 
     role = get_project_role(entity["container_code"], current_identity)

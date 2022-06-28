@@ -15,6 +15,7 @@
 import requests
 from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -29,12 +30,6 @@ router = APIRouter(tags=["Dataset Version"])
 
 _logger = LoggerFactory('api_versions').get_logger()
 
-
-#def api_registry(self):
-#    api_resource.add_resource(self.Publish, '/<dataset_id>/publish')
-#    api_resource.add_resource(self.PublishStatus, '/<dataset_id>/publish/status')
-#    api_resource.add_resource(self.DownloadPre, '/<dataset_id>/download/pre')
-#    api_resource.add_resource(self.DatasetVersions, '/<dataset_id>/versions')
 
 @cbv.cbv(router)
 class Publish:
@@ -56,7 +51,7 @@ class Publish:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -79,7 +74,7 @@ class PublishStatus:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -104,7 +99,7 @@ class DownloadPre:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -128,4 +123,4 @@ class DatasetVersions:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), code=response.status_code)

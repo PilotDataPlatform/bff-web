@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -68,7 +69,7 @@ class Download:
                 entity_node = get_entity_by_id(file["id"])
                 zone = "greenroom" if entity_node["zone"] == 0 else "core"
 
-                if not has_permission(entity_node["container_code"], "file", zone, "download"):
+                if not has_permission(entity_node["container_code"], "file", zone, "download", self.current_identity):
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_error_msg("Permission Denied")
                     return api_response.json_response()
@@ -86,7 +87,7 @@ class Download:
                 response = requests.post(
                     ConfigClass.DOWNLOAD_SERVICE_GR_V2 + 'download/pre/', json=payload, headers=request.headers
                 )
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
             _logger.info("Error calling download service " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
@@ -140,7 +141,7 @@ class DatasetDownload:
             response = requests.post(
                 ConfigClass.DOWNLOAD_SERVICE_CORE_V2 + 'dataset/download/pre', json=payload, headers=request.headers
             )
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
             _logger.info("Error calling download service " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)

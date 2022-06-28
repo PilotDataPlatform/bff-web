@@ -13,6 +13,7 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 import requests
 
@@ -44,11 +45,12 @@ class LastLoginRestful:
             # the auth api will format the last_login as "%Y-%m-%dT%H:%M:%S"
             payload.update({"last_login": True})
             res = requests.put(ConfigClass.AUTH_SERVICE + 'admin/user', json=payload)
-            return res.json(), res.status_code
+            return JSONResponse(content=res.json(), status_code=res.status_code)
         except Exception as e:
-            return {'result': str(e)}, 403
+            return JSONResponse(content={'result': str(e)}, status_code=403)
 
 
+@cbv.cbv(router)
 class UserStatus:
     @router.get(
         '/user/status',
@@ -61,13 +63,13 @@ class UserStatus:
             decoded = pyjwt.decode(token, verify=False)
             email = decoded["email"]
         except Exception as e:
-            return {'result': "JWT user status error " + str(e)}, 500
+            return JSONResponse(content={'result': "JWT user status error " + str(e)}, status_code=500)
 
         try:
             payload = {"email": email}
             response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=payload)
             if not response.json()["result"]:
-                return "User not found", 404
+                return JSONResponse(content="User not found", status_code=404)
             status = response.json()["result"]["attributes"]["status"]
             response_json = response.json()
             result = {
@@ -75,10 +77,12 @@ class UserStatus:
                 "status": status,
             }
             response_json["result"] = result
-            return response_json, response.status_code
+            return JSONResponse(content=response_json, status_code=response.status_code)
         except Exception as e:
-            return {'result': "Error calling auth service" + str(e)}, 500
+            return JSONResponse(content={'result': "Error calling auth service" + str(e)}, status_code=500)
 
+
+@cbv.cbv(router)
 class UserAccount:
     current_identity: dict = Depends(jwt_required)
 
@@ -96,13 +100,22 @@ class UserAccount:
             operation_payload = req_body.get('payload', {})
             # check parameters
             if not operation_type:
-                return {'result': 'operation_type required.'}, 400
+                return JSONResponse(
+                    content={'result': 'operation_type required.'},
+                    status_code=400
+                )
             # check user identity
             if not user_email and not user_id:
-                return {'result': 'either user_email or user_id required.'}, 400
+                return JSONResponse(
+                    content={'result': 'either user_email or user_id required.'},
+                    status_code=400
+                )
             # check user operation type
             if operation_type not in ['enable', 'disable']:
-                return {'result': 'operation {} is not allowed'.format(operation_type)}, 400
+                return JSONResponse(
+                    content={'result': 'operation {} is not allowed'.format(operation_type)},
+                    status_code=400
+                )
             payload = {
                 "operation_type": operation_type,
                 "user_id": user_id,
@@ -158,9 +171,12 @@ class UserAccount:
                         "support_email": ConfigClass.EMAIL_SUPPORT,
                     },
                 )
-            return response.json(), response.status_code
+            return JSONResponse(content=response.json(), status_code=response.status_code)
         except Exception as e:
-            return {'result': "Error calling user account management service" + str(e)}, 500
+            return JSONResponse(
+                content={'result': "Error calling user account management service" + str(e)},
+                status_code=500
+            )
 
     def create_usernamespace_folder_admin(self, username):
         project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)

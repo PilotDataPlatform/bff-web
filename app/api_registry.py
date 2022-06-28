@@ -23,6 +23,8 @@ from api import api_provenance
 from api.api_tags import api_batch_tags_operation, api_tags_operation
 from api.api_user_event import event
 from api import api_users
+from api.api_resource_request import resource_request
+from api.api_files import file_stats
 
 
 def api_registry(app: FastAPI):
@@ -44,7 +46,7 @@ def api_registry(app: FastAPI):
     app.include_router(api_schema_template.router, prefix="/v1")
     app.include_router(api_validate.router, prefix="/v1")
     app.include_router(api_versions.router, prefix="/v1")
-    app.include_router(api_download.router, prefix="/v1")
+    app.include_router(api_download.router, prefix="/v2")
     app.include_router(api_email.router, prefix="/v1")
     app.include_router(file_ops.router, prefix="/v1")
     app.include_router(meta.router, prefix="/v1")
@@ -61,3 +63,5 @@ def api_registry(app: FastAPI):
     app.include_router(event.router, prefix="/v1")
     app.include_router(api_users.router, prefix="/v1")
     app.include_router(api_workbench.router, prefix="/v1")
+    app.include_router(resource_request.router, prefix="/v1")
+    app.include_router(file_stats.router, prefix="/v1")

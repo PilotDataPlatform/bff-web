@@ -20,6 +20,7 @@ from models.api_response import APIResponse, EAPIResponseCode
 from services.dataset import get_dataset_by_id
 from services.meta import get_entity_by_id
 from fastapi import APIRouter, Depends, Request, Response
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -67,7 +68,7 @@ class Preview:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f"Error calling dataops gr: {str(e)}")
             return api_response.json_response()
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), code=response.status_code)
 
 
 @cbv.cbv(router)

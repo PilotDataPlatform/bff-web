@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -37,7 +38,7 @@ class CodeRestful:
     def get(self, dataset_code: str):
         url = ConfigClass.DATASET_SERVICE + 'dataset-peek/{}'.format(dataset_code)
         respon = requests.get(url)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -52,7 +53,7 @@ class Dataset:
     async def get(self, dataset_id: str):
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
         respon = requests.get(url)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
     @router.put(
         '/dataset/{dataset_id}',
@@ -63,7 +64,7 @@ class Dataset:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}'.format(dataset_id)
         payload_json = await request.json()
         respon = requests.put(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -80,12 +81,12 @@ class RestfulPost:
         operator_username = self.current_identity['username']
         payload_username = payload_json.get('username')
         if operator_username != payload_username:
-            return {
+            return JSONResponse(content={
                 'err_msg': 'No permissions: {} cannot create dataset for {}'.format(
                     operator_username, payload_username)
-            }, 403
+            }, status_code=403)
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -102,13 +103,13 @@ class List:
         # also check permission
         operator_username = self.current_identity['username']
         if operator_username != username:
-            return {
+            return JSONResponse(content={
                 'err_msg': 'No permissions'
-            }, 403
+            }, status_code=403)
 
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -131,7 +132,7 @@ class DatasetFiles:
             entities.append(file_node)
         result = response.json()
         result["result"]["data"] = entities
-        return result, response.status_code
+        return JSONResponse(content=result, status_code=response.status_code)
 
     @router.post(
         '/dataset/{dataset_id}/files',
@@ -142,7 +143,7 @@ class DatasetFiles:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
     @router.put(
         '/dataset/{dataset_id}/files',
@@ -153,7 +154,7 @@ class DatasetFiles:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
         payload_json = await request.json()
         respon = requests.put(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/files',
@@ -164,7 +165,7 @@ class DatasetFiles:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
         payload_json = request.get_json()
         respon = requests.delete(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -180,7 +181,7 @@ class DatasetFileUpdate:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files/{}'.format(dataset_id, file_id)
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -204,7 +205,7 @@ class DatsetTasks:
 
         url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
         response = requests.get(url, params=new_params)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/file/tasks',
@@ -220,4 +221,4 @@ class DatsetTasks:
 
         url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
         response = requests.delete(url, json=request_body)
-        return response.json(), response.status_code
+        return JSONResponse(content=response.json(), status_code=response.status_code)

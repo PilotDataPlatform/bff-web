@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -53,7 +54,7 @@ class WorkbenchRestful:
             }
             response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=data)
             if response.status_code != 200:
-                return response.json(), response.status_code
+                return JSONResponse(content=response.json(), status_code=response.status_code)
             resource["deploy_by_username"] = response.json()["result"]["username"]
 
         data = {i["resource"]: i for i in result}

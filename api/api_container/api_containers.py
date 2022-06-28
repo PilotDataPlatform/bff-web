@@ -12,7 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from common import LoggerFactory, ProjectClientSync
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
 from app.auth import jwt_required
@@ -30,7 +30,7 @@ class Containers:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/containers',
+        '/containers/',
         summary="List and query all projects",
     )
     async def get(self, request: Request):
@@ -73,9 +73,9 @@ class Containers:
             payload["created_at_end"] = request.query_params.get("create_time_end")
 
         result = {}
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        result = project_client.search(**payload)
-        api_response.set_result([i.json() for i in result["result"]])
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        result = await project_client.search(**payload)
+        api_response.set_result([await i.json() for i in result["result"]])
         api_response.set_total(result["total"])
         api_response.set_num_of_pages(result["num_of_pages"])
         return api_response.json_response()
@@ -96,8 +96,8 @@ class Container:
         logger.info("Calling Container put")
         api_response = APIResponse()
         update_data = await request.json()
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         if "icon" in update_data:
             logo = update_data["icon"]

@@ -18,7 +18,6 @@ from app.main import create_app
 from common import LoggerFactory
 from config import ConfigClass
 
-flaskapp = create_app()
 main_logger = LoggerFactory('main').get_logger()
 
 app = create_app()

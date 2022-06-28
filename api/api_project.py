@@ -40,7 +40,7 @@ class RestfulProject:
         my_res = APIResponse()
         project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = await project_client.get(id=project_id)
-        my_res.set_result(project.json())
+        my_res.set_result(await project.json())
         return my_res.json_response()
 
 
@@ -57,7 +57,7 @@ class RestfulProjectByCode:
         my_res = APIResponse()
         project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         project = await project_client.get(code=project_code)
-        my_res.set_result(project.json())
+        my_res.set_result(await project.json())
         return my_res.json_response()
 
 

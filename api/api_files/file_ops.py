@@ -22,6 +22,7 @@ from services.permissions_service.decorators import PermissionsCheck
 from services.permissions_service.utils import get_project_role, has_permission
 from services.meta import get_entity_by_id
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 from app.auth import jwt_required
 
@@ -37,7 +38,7 @@ class FileActionTasks:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/actions/tasks',
+        '/files/actions/tasks',
         summary="Get task information",
         dependencies=[Depends(PermissionsCheck("tasks", "*", "view"))]
     )
@@ -48,13 +49,10 @@ class FileActionTasks:
         request_params.update({"code": request_params.get("project_code")})
         url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
         response = requests.get(url, params=request_params)
-        if response.status_code == 200:
-            return response.json(), response.status_code
-        else:
-            return response.text, 500
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     @router.delete(
-        '/actions/tasks',
+        '/files/actions/tasks',
         summary="Delete tasks",
         dependencies=[Depends(PermissionsCheck("tasks", "*", "delete"))]
     )
@@ -62,10 +60,7 @@ class FileActionTasks:
         request_body = await request.json()
         url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
         response = requests.delete(url, json=request_body)
-        if response.status_code == 200:
-            return response.json(), response.status_code
-        else:
-            return response.text, 500
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -73,7 +68,7 @@ class FileActions:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/actions',
+        '/files/actions',
         summary="invoke an async file operation job",
     )
     async def post(self, request: Request):
@@ -87,10 +82,10 @@ class FileActions:
         # validate request
         session_id = headers.get("Session-Id", None)
         if not session_id:
-            return "Header Session-ID required", EAPIResponseCode.bad_request.value
+            raise APIException(error_msg="Header Session-ID required", code=EAPIResponseCode.forbidden.value)
 
-        if not has_permission(project_code, 'file', '*', operation.lower()):
-            return "Permission denied", EAPIResponseCode.forbidden.value
+        if not has_permission(project_code, 'file', '*', operation.lower(), self.current_identity):
+            raise APIException(error_msg="Permission denied", code=EAPIResponseCode.forbidden.value)
 
         if operation == 'delete':
             validate_delete_permissions(targets, project_code, self.current_identity)
@@ -98,11 +93,8 @@ class FileActions:
         # request action utility API
         payload = request_body
         payload['session_id'] = session_id
-        action_util_res = requests.post(data_actions_utility_url, json=payload, headers=request.headers)
-        if action_util_res.status_code == 202:
-            return action_util_res.json(), action_util_res.status_code
-        else:
-            return action_util_res.text, action_util_res.status_code
+        response = requests.post(data_actions_utility_url, json=payload, headers=request.headers)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 def validate_request_params(request_body: dict):
