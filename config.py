@@ -115,6 +115,9 @@ class Settings(BaseSettings):
     LDAP_DC2: str
     LDAP_objectclass: str
     LDAP_USER_OBJECTCLASS: str
+    LDAP_SET_GIDNUMBER: bool = False
+    LDAP_GID_LOWER_BOUND = 30000
+    LDAP_GID_UPPER_BOUND = 40000
 
     # Domain
     SITE_DOMAIN: str
