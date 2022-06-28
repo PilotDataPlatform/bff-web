@@ -210,7 +210,7 @@ def ldap_create_user_group(code, description):
         # Please remember to convert all string to utf-8
         objectclass = [ConfigClass.LDAP_objectclass.encode('utf-8')]
         attrs = {'objectclass': objectclass,
-                 'sAMAccountName': f'{ConfigClass.AD_PROJECT_GROUP_PREFIX}-{code}'.encode('utf-8')}
+                 ConfigClass.LDAP_USER_OBJECTCLASS: f'{ConfigClass.AD_PROJECT_GROUP_PREFIX}-{code}'.encode('utf-8')}
         if description:
             attrs['description'] = description.encode('utf-8')
         ldif = modlist.addModlist(attrs)

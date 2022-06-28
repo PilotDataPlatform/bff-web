@@ -114,6 +114,7 @@ class Settings(BaseSettings):
     LDAP_DC1: str
     LDAP_DC2: str
     LDAP_objectclass: str
+    LDAP_USER_OBJECTCLASS: str
 
     # Domain
     SITE_DOMAIN: str
