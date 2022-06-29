@@ -163,7 +163,7 @@ class DatasetFiles:
     )
     async def delete(self, dataset_id: str, request: Request):
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/files'.format(dataset_id)
-        payload_json = request.get_json()
+        payload_json = await request.json()
         respon = requests.delete(url, json=payload_json, headers=request.headers)
         return JSONResponse(content=respon.json(), status_code=respon.status_code)
 

@@ -60,7 +60,7 @@ class FileDetailBulk:
         result = response.json()
         for entity in result["result"]:
             entity["zone"] = "greenroom" if entity["zone"] == 0 else "core"
-        return JSONResponse(content=result, status_code=result.status_code)
+        return JSONResponse(content=result, status_code=response.status_code)
 
 
 @cbv.cbv(router)

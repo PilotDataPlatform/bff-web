@@ -78,7 +78,7 @@ class VirtualFolderFiles:
         '/collections/{collection_id}/files',
         summary="Remove items from vfolder",
     )
-    def delete(self, collection_id: str, request: Request):
+    async def delete(self, collection_id: str, request: Request):
         """
         Delete items from vfolder
         """
@@ -94,7 +94,7 @@ class VirtualFolderFiles:
                     _res.set_result("no permission for this project")
                     return _res.json_response()
 
-            data = request.get_json()
+            data = await request.json()
             data['id'] = collection_id
             url = f'{ConfigClass.METADATA_SERVICE}collection/items/'
             response = requests.delete(url, json=data)

@@ -249,7 +249,7 @@ class FileAttributes:
 
         try:
             params = {'id': entity['id']}
-            attributes_update = request.get_json()
+            attributes_update = await request.json()
             payload = {
                 'parent': entity['parent'],
                 'parent_path': entity['parent_path'],
