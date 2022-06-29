@@ -12,20 +12,19 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import requests
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
-from fastapi_utils import cbv
-from app.auth import jwt_required
 import math
 
-from models.api_response import APIResponse, EAPIResponseCode
-from config import ConfigClass
-from services.notifier_services.email_service import SrvEmail
+import requests
 from common import LoggerFactory, ProjectClient
-from services.permissions_service.decorators import PermissionsCheck
-from resources.error_handler import APIException
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
 
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse, EAPIResponseCode
+from resources.error_handler import APIException
+from services.notifier_services.email_service import SrvEmail
+from services.permissions_service.decorators import PermissionsCheck
 
 _logger = LoggerFactory('api_resource_request').get_logger()
 router = APIRouter(tags=["Resource Request"])

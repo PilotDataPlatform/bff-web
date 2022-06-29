@@ -17,19 +17,16 @@ from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
 from config import ConfigClass
-from models.api_response import APIResponse
-from models.api_response import EAPIResponseCode
+from models.api_response import APIResponse, EAPIResponseCode
 from resources.error_handler import APIException
 from services.meta import get_entity_by_id
 from services.permissions_service.decorators import PermissionsCheck
-from services.permissions_service.utils import get_project_role
-from services.permissions_service.utils import has_permission
+from services.permissions_service.utils import get_project_role, has_permission
 
 from .utils import has_permissions
-
 
 router = APIRouter(tags=["Attribute Templates"])
 
@@ -313,6 +310,7 @@ class ImportManifest:
                 'result': str(e)
             }
             return JSONResponse(content=error_msg, status_code=EAPIResponseCode.internal_error.value)
+
 
 @cbv.cbv(router)
 class FileManifestQuery:

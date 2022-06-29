@@ -12,17 +12,18 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from config import ConfigClass
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from services.notifier_services.email_service import SrvEmail
-from services.permissions_service.decorators import PermissionsCheck
-import requests
 import re
+
+import requests
+from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse, EAPIResponseCode
+from services.notifier_services.email_service import SrvEmail
+from services.permissions_service.decorators import PermissionsCheck
 
 router = APIRouter(tags=["Email"])
 

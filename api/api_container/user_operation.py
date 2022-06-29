@@ -20,12 +20,11 @@ from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
-
 
 # init logger
 _logger = LoggerFactory('api_user_ops').get_logger()
@@ -189,10 +188,10 @@ class UserContainerQuery:
             payload["page_size"] = 999
 
         if "create_time_start" in data and "create_time_end" in data:
-            start_time = datetime.utcfromtimestamp(int(payload["query"]["create_time_start"]))
-            end_time = datetime.utcfromtimestamp(int(payload["query"]["create_time_end"]))
-            payload["create_time_start"] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
-            payload["create_time_end"] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
+            start_time = datetime.utcfromtimestamp(int(data["create_time_start"]))
+            end_time = datetime.utcfromtimestamp(int(data["create_time_end"]))
+            payload["created_at_start"] = start_time.strftime('%Y-%m-%dT%H:%M:%S')
+            payload["created_at_end"] = end_time.strftime('%Y-%m-%dT%H:%M:%S')
 
         if user_node["role"] != "admin":
             roles = realm_roles

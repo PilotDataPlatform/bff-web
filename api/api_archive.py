@@ -12,16 +12,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from fastapi import APIRouter, Depends, Request
+import requests
+from common import LoggerFactory
+from fastapi import APIRouter, Depends
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
-from services.permissions_service.utils import has_permission, get_project_role
-from common import LoggerFactory
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
-import requests
+from services.permissions_service.utils import get_project_role, has_permission
 
 router = APIRouter(tags=["Archive"])
 
@@ -69,8 +69,8 @@ class Archive:
             response = requests.get(ConfigClass.DATA_UTILITY_SERVICE + "archive", params={"file_id": file_id})
         except Exception as e:
             _logger.info(f"Error calling dataops gr: {str(e)}")
-            return JSONResponse(content=response.json(), code=response.status_code)
-        return JSONResponse(content=response.json(), code=response.status_code)
+            return JSONResponse(content=response.json(), status_code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
     def has_file_permissions(self, project_code, file_info):
         if self.current_identity["role"] != "admin":

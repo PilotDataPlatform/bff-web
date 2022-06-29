@@ -12,13 +12,14 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from models.api_response import APIResponse
-from config import ConfigClass
-from services.permissions_service.decorators import PermissionsCheck
 import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
+
 from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse
+from services.permissions_service.decorators import PermissionsCheck
 
 router = APIRouter(tags=["Unsubscribe"])
 

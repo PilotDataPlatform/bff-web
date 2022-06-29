@@ -12,11 +12,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from config import ConfigClass
 import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
+
 from app.auth import jwt_required
+from config import ConfigClass
 
 router = APIRouter(tags=["Knowledge Graph"])
 

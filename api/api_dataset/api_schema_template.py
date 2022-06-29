@@ -15,10 +15,10 @@
 import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
-from app.auth import jwt_required
-from services.permissions_service.decorators import DatasetPermission
 
+from app.auth import jwt_required
 from config import ConfigClass
+from services.permissions_service.decorators import DatasetPermission
 
 router = APIRouter(tags=["Dataset Schema Template"])
 

@@ -12,25 +12,24 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import random
 import re
 from uuid import uuid4
-import random
 
 import ldap
 import ldap.modlist as modlist
 import requests
 from common import (LoggerFactory, ProjectClient, ProjectNotFoundException,
                     get_boto3_admin_client, get_minio_policy_client)
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from resources.error_handler import APIException
 from resources.minio import (get_admin_policy, get_collaborator_policy,
                              get_contributor_policy)
-from fastapi import APIRouter, Depends, Request
-from fastapi_utils import cbv
-from app.auth import jwt_required
-
 from services.permissions_service.decorators import PermissionsCheck
 
 _logger = LoggerFactory('api_project').get_logger()

@@ -15,8 +15,8 @@
 from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse
 
@@ -104,6 +104,6 @@ class Container:
             project.upload_logo(logo)
             del update_data["icon"]
 
-        result = project.update(**update_data)
-        api_response.set_result(result.json())
+        result = await project.update(**update_data)
+        api_response.set_result(await result.json())
         return api_response.json_response()

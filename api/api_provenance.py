@@ -12,18 +12,20 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from config import ConfigClass
 import json
+
 import requests
-from services.permissions_service.utils import get_project_role, get_project_code_from_request
+from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
-from services.permissions_service.decorators import PermissionsCheck
 
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse, EAPIResponseCode
+from services.permissions_service.decorators import PermissionsCheck
+from services.permissions_service.utils import (get_project_code_from_request,
+                                                get_project_role)
 
 _logger = LoggerFactory('api_provenance').get_logger()
 

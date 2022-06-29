@@ -12,12 +12,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from fastapi import APIRouter, Depends, Request
-from fastapi_utils import cbv
-from app.auth import jwt_required
 import jwt as pyjwt
 import requests
-from common import LoggerFactory, ProjectClientSync
+from common import ProjectClient
+from fastapi import APIRouter, Request
+from fastapi_utils import cbv
 
 from config import ConfigClass
 
@@ -78,11 +77,11 @@ class ADUserUpdate:
                 # role means platform_role, else role means the project_role
                 if invite_detail["platform_role"] == "admin":
                     self.assign_user_role_ad("platform-admin", email=email)
-                    self.bulk_create_name_folder_admin(username)
+                    await self.bulk_create_name_folder_admin(username)
                 else:
                     if invite_detail["project_code"]:
-                        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                        project = project_client.get(code=invite_detail["project_code"])
+                        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                        project = await project_client.get(code=invite_detail["project_code"])
                         self.assign_user_role_ad(project.code + '-' + invite_detail["project_role"], email=email)
                         self.bulk_create_folder(folder_name=username, project_code_list=[project.code])
 
@@ -157,11 +156,11 @@ class ADUserUpdate:
                         {error}")
             raise error
 
-    def bulk_create_name_folder_admin(self, username):
+    async def bulk_create_name_folder_admin(self, username):
         try:
             project_code_list = []
-            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project_result = project_client.search()
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project_result = await project_client.search()
             projects = project_result["result"]
             for project in projects:
                 project_code_list.append(project.code)

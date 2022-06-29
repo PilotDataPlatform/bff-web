@@ -12,18 +12,18 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import jwt as pyjwt
+import requests
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-import requests
 
-from common import LoggerFactory, ProjectClientSync
-from services.notifier_services.email_service import SrvEmail
-from config import ConfigClass
 from app.auth import jwt_required
-import jwt as pyjwt
-from resources.error_handler import APIException
+from config import ConfigClass
 from models.api_response import EAPIResponseCode
+from resources.error_handler import APIException
+from services.notifier_services.email_service import SrvEmail
 
 # init logger
 _logger = LoggerFactory('api_auth_service').get_logger()
@@ -154,7 +154,7 @@ class UserAccount:
                         % (user_info.get("username"))
                     )
                     # create namespace folder for all platform admin  once enabled
-                    self.create_usernamespace_folder_admin(username=user_info.get("username"))
+                    await self.create_usernamespace_folder_admin(username=user_info.get("username"))
 
             elif operation_type == "disable":
                 subject = "User disabled"
@@ -178,13 +178,13 @@ class UserAccount:
                 status_code=500
             )
 
-    def create_usernamespace_folder_admin(self, username):
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+    async def create_usernamespace_folder_admin(self, username):
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
         page = 0
-        result = project_client.search(page=page, page_size=50)
+        result = await project_client.search(page=page, page_size=50)
         projects = result["result"]
         while projects:
-            result = project_client.search(page=page, page_size=50)
+            result = await project_client.search(page=page, page_size=50)
             projects = result["result"]
             project_codes = [i.code for i in projects]
             page += 1

@@ -18,8 +18,8 @@ from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from services.meta import search_entities

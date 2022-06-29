@@ -12,17 +12,16 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+import requests
+from common import ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
+
 from app.auth import jwt_required
-
-from models.api_response import APIResponse, EAPIResponseCode
 from config import ConfigClass
-import requests
-from common import ProjectClientSync
+from models.api_response import APIResponse, EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
-
 
 router = APIRouter(tags=["Announcements"])
 
@@ -36,7 +35,7 @@ class AnnouncementRestful:
         summary="List announcements",
         dependencies=[Depends(PermissionsCheck("announcement", "*", "view"))]
     )
-    def get(self, request: Request):
+    async def get(self, request: Request):
         api_response = APIResponse()
         data = request.query_params
         if not data.get("project_code"):
@@ -56,20 +55,20 @@ class AnnouncementRestful:
         summary="List announcements",
         dependencies=[Depends(PermissionsCheck("announcement", "*", "create"))]
     )
-    def post(self, request: Request):
+    async def post(self, request: Request):
         api_response = APIResponse()
-        data = request.json()
+        data = await request.json()
         if not data.get("project_code"):
             api_response.set_error_msg("Missing project code")
             api_response.set_code(EAPIResponseCode.bad_request)
             return api_response.json_response()
 
-        project_client = ProjectClientSync(
+        project_client = ProjectClient(
             ConfigClass.PROJECT_SERVICE,
             ConfigClass.REDIS_URL
         )
         # will 404 if project doesn't exist
-        project_client.get(code=data["project_code"])
+        await project_client.get(code=data["project_code"])
 
         data["publisher"] = self.current_identity["username"]
         response = requests.post(ConfigClass.NOTIFY_SERVICE + "/v1/announcements", json=data)

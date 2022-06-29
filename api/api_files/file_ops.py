@@ -13,18 +13,18 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-
-from config import ConfigClass
-from models.api_response import EAPIResponseCode
-from resources.error_handler import APIException
 from common import LoggerFactory
-from services.permissions_service.decorators import PermissionsCheck
-from services.permissions_service.utils import get_project_role, has_permission
-from services.meta import get_entity_by_id
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
+
 from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import EAPIResponseCode
+from resources.error_handler import APIException
+from services.meta import get_entity_by_id
+from services.permissions_service.decorators import PermissionsCheck
+from services.permissions_service.utils import get_project_role, has_permission
 
 _logger = LoggerFactory('api_files_ops_v1').get_logger()
 
@@ -67,7 +67,7 @@ class FileActionTasks:
 class FileActions:
     current_identity: dict = Depends(jwt_required)
 
-    @router.get(
+    @router.post(
         '/files/actions',
         summary="invoke an async file operation job",
     )
@@ -117,7 +117,8 @@ def validate_delete_permissions(targets: list, project_code, current_identity):
     '''
         Project admin can delete files
         Project collaborator can only delete the file belong to them
-        Project contributor can only delete the greenroom file belong to them (confirm the file is greenroom file, and has owned by current user)
+        Project contributor can only delete the greenroom file belong to them (confirm the file is greenroom file,
+        and has owned by current user)
     '''
     user_project_role = get_project_role(project_code)
     if user_project_role not in ["admin", "platform-admin"]:

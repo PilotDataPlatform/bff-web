@@ -128,13 +128,6 @@ class Settings(BaseSettings):
     # Resource request
     RESOURCE_REQUEST_ADMIN: str
 
-    # BFF RDS
-    RDS_HOST: str
-    RDS_PORT: str
-    RDS_DBNAME: str
-    RDS_USER: str
-    RDS_PWD: str
-    RDS_SCHEMA_DEFAULT: str
     ICON_SIZE_LIMIT: int = 500 * 1000
 
     # MinIO
@@ -173,9 +166,6 @@ class Settings(BaseSettings):
 
         settings.KONG_BASE = settings.KONG_BASE + settings.KONG_PATH
         settings.KG_SERVICE = settings.KG_SERVICE + "/v1/" if settings.env == "test" else settings.KG_SERVICE_STAGE + "/v1/"
-
-        settings.OPS_DB_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
-        settings.SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
 
         settings.REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
         return settings

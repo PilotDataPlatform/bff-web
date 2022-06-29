@@ -12,16 +12,17 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
-from fastapi_utils import cbv
-from app.auth import jwt_required
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory
-from services.permissions_service.decorators import PermissionsCheck, get_project_code_from_request
-from services.permissions_service.utils import get_project_role
-from config import ConfigClass
 import requests
+from common import LoggerFactory
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse, EAPIResponseCode
+from services.permissions_service.decorators import (
+    PermissionsCheck, get_project_code_from_request)
+from services.permissions_service.utils import get_project_role
 
 _logger = LoggerFactory('api_file_statistics').get_logger()
 
@@ -45,7 +46,6 @@ class FileStatistics:
         try:
             url = ConfigClass.ENTITYINFO_SERVICE + "project/{}/files/statistics".format(project_id)
             current_role = self.current_identity['role']
-            user_id = self.current_identity["user_id"]
             operator = self.current_identity['username']
             start_date = request.query_params['start_date']
             end_date = request.query_params['end_date']
@@ -73,7 +73,8 @@ class FileStatistics:
                 return _res.to_dict, _res.code
             # Not Admin
             # Project collabrator/contributor could get a total file number of their own files in greenroom
-            # Project contributor cannot get any information in core but collabrator and admin could get the total number of files in core
+            # Project contributor cannot get any information in core but collabrator and admin could get the total
+            # number of files in core
             query_params['operator'] = operator
             fetched_stats = requests.get(url, params=query_params)
             if not fetched_stats.status_code == 200:

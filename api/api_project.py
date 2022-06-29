@@ -12,15 +12,15 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from config import ConfigClass
-from models.api_response import APIResponse
-from common import LoggerFactory, ProjectClient
-from services.permissions_service.decorators import PermissionsCheck
 import requests
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse
+from services.permissions_service.decorators import PermissionsCheck
 
 _logger = LoggerFactory('api_project').get_logger()
 

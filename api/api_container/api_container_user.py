@@ -13,20 +13,20 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
-from common import LoggerFactory, ProjectClientSync
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from models.user_type import map_role_to_frontend
 from resources.error_handler import APIException
-from resources.utils import add_user_to_ad_group, remove_user_from_project_group
+from resources.utils import (add_user_to_ad_group,
+                             remove_user_from_project_group)
 from services.notifier_services.email_service import SrvEmail
 from services.permissions_service.decorators import PermissionsCheck
-
 
 # init logger
 logger = LoggerFactory('api_container_user').get_logger()
@@ -54,8 +54,8 @@ class ContainerUser:
             logger.error('Error: user\'s role is required.')
             return {'result': "User's role is required."}
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         # validate user and relationship
         user = validate_user(username)
@@ -101,8 +101,9 @@ class ContainerUser:
 
         logger.info(f'Call API for changing user {username} role in project {project_id}')
 
-        old_role = await request.json().get("old_role", None)
-        new_role = await request.json().get("new_role", None)
+        data = await request.json()
+        old_role = data.get("old_role", None)
+        new_role = data.get("new_role", None)
         is_valid, res_valid, code = validate_payload(
             old_role=old_role,
             new_role=new_role,
@@ -112,8 +113,8 @@ class ContainerUser:
         if not is_valid:
             return JSONResponse(content=res_valid, status_code=code)
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         # validate user
         user = validate_user(username)
@@ -141,7 +142,7 @@ class ContainerUser:
         summary="Remove user from project",
         dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
     )
-    def delete(self, username: str, project_id: str):
+    async def delete(self, username: str, project_id: str):
         """
         This method allow user to remove user's permission to a specific container.
         """
@@ -150,8 +151,8 @@ class ContainerUser:
         user = validate_user(username)
         user_email = user["email"]
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
         response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params={"username": username})
         if response.status_code != 200:
             raise Exception(str(response.__dict__))

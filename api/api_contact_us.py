@@ -12,11 +12,12 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+from common import LoggerFactory
 from fastapi import APIRouter, Request
 from fastapi_utils import cbv
+
 from models.api_response import APIResponse, EAPIResponseCode
 from models.contact_us import ContactUsForm
-from common import LoggerFactory
 from services.contact_us_services.contact_us_manager import SrvContactUsManager
 
 router = APIRouter(tags=["Contact Us"])

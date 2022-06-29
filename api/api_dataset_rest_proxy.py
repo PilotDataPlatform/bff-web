@@ -16,12 +16,12 @@ import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
 
+from app.auth import jwt_required
 from config import ConfigClass
 from services.dataset import get_dataset_by_id
-from services.permissions_service.decorators import DatasetPermission, DatasetPermissionByCode
-
+from services.permissions_service.decorators import (DatasetPermission,
+                                                     DatasetPermissionByCode)
 
 router = APIRouter(tags=["Dataset"])
 

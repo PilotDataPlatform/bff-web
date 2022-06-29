@@ -17,12 +17,10 @@ from common import LoggerFactory
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
+
 from app.auth import jwt_required
-
 from config import ConfigClass
-from models.api_response import APIResponse
-from models.api_response import EAPIResponseCode
-
+from models.api_response import APIResponse, EAPIResponseCode
 from services.permissions_service.decorators import DatasetPermission
 
 #api_resource = module_api.namespace('DatasetProxy', description='Versions API', path='/v1/dataset/')
@@ -51,7 +49,7 @@ class Publish:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return JSONResponse(content=response.json(), code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -74,7 +72,7 @@ class PublishStatus:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return JSONResponse(content=response.json(), code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -99,7 +97,7 @@ class DownloadPre:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return JSONResponse(content=response.json(), code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
 
 @cbv.cbv(router)
@@ -123,4 +121,4 @@ class DatasetVersions:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result(f'Error calling dataset service: {str(e)}')
             return api_response.json_response()
-        return JSONResponse(content=response.json(), code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)

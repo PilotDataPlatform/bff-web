@@ -13,18 +13,17 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
-from app.auth import jwt_required
-from common import LoggerFactory, ProjectClient
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from resources.error_handler import APIException
 from resources.utils import check_invite_permissions
 from services.permissions_service.utils import has_permission
-
 
 router = APIRouter(tags=["Invitations"])
 
@@ -133,4 +132,4 @@ class PendingUserRestful:
             error_msg = f'Error calling Auth service for invite list: {e}'
             _logger.error(error_msg)
             raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
-        return JSONResponse(content=response.json(), code=response.status_code)
+        return JSONResponse(content=response.json(), status_code=response.status_code)

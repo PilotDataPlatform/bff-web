@@ -12,16 +12,18 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
-from fastapi_utils import cbv
-from app.auth import jwt_required
-from models.api_response import APIResponse, EAPIResponseCode
-from common import LoggerFactory, ProjectClient
-from services.permissions_service.utils import get_project_role, get_project_code_from_request
-from config import ConfigClass
 import json
+
 import requests
+from common import LoggerFactory, ProjectClient
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+
+from app.auth import jwt_required
+from config import ConfigClass
+from models.api_response import APIResponse, EAPIResponseCode
+from services.permissions_service.utils import (get_project_code_from_request,
+                                                get_project_role)
 
 _logger = LoggerFactory('api_files_ops_v4').get_logger()
 
@@ -87,13 +89,14 @@ class FileSearch:
                     return _res.json_response()
 
             elif project_role == 'collaborator':
+                display_path = query['display_path']['value']
                 if query['zone']['value'] == 'greenroom' and 'display_path' not in query:
                     _logger.error(
                         'collaborator user does not have access to query all greenroom file info')
                     _res.set_code(EAPIResponseCode.forbidden)
                     _res.set_error_msg('Permission Deined')
                     return _res.json_response()
-                elif 'display_path' in query and self.current_identity['username'] not in query['display_path']['value']:
+                elif 'display_path' in query and self.current_identity['username'] not in display_path:
                     _logger.error(
                         'collaborator user can noly have access to their own file info')
                     _res.set_code(EAPIResponseCode.forbidden)
