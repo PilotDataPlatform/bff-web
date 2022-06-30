@@ -34,7 +34,7 @@ class EmailRestful:
 
     @router.get(
         '/email',
-        summary="List workbench entries",
+        summary="Send notification email to platform users",
         dependencies=[Depends(PermissionsCheck("notification", "*", "create"))]
     )
     async def post(self, request: Request):

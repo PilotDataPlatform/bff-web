@@ -418,7 +418,7 @@ class AttachAttributes:
         updated_items = []
         try:
             if self.current_identity['role'] != 'admin':
-                project_role = get_project_role(project_code)
+                project_role = get_project_role(project_code, self.current_identity)
                 if not project_role:
                     api_response.set_code(EAPIResponseCode.forbidden)
                     api_response.set_result('User does not have access to this project')

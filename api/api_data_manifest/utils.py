@@ -29,7 +29,7 @@ def has_permissions(template_id, file_node, current_identity):
         return error_msg, 500
 
     if current_identity["role"] != "admin":
-        role = get_project_role(manifest['project_code'])
+        role = get_project_role(manifest['project_code'], current_identity)
         if role == "contributor":
             # contrib must own the file to attach manifests
             root_folder = file_node["parent_path"].split(".")[0]

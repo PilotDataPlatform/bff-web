@@ -28,7 +28,7 @@ def has_permission(project_code, resource, zone, operation, current_identity):
             _logger.info(
                 "No project code and not a platform admin, permission denied")
             return False
-        role = get_project_role(project_code)
+        role = get_project_role(project_code, current_identity)
         if not role:
             _logger.info(
                 "Unable to get project role in permissions check, user might not belong to project")

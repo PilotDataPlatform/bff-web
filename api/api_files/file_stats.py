@@ -54,7 +54,7 @@ class FileStatistics:
                 "end_date": end_date
             }
             project_code = get_project_code_from_request({"project_geid": project_id})
-            project_role = get_project_role(project_code)
+            project_role = get_project_role(project_code, self.current_identity)
 
             # Permission control
             # Upload & Download (user based statistics)Project admin could get a total file number for all files
