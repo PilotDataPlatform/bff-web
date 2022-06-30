@@ -13,7 +13,7 @@ from api import api_dataset_rest_proxy
 from api.api_dataset import api_folder, api_schema, api_schema_template, api_validate, api_versions
 from api import api_download
 from api import api_email
-from api.api_files import file_ops, meta, vfolder_ops
+from api.api_files import file_ops, meta, vfolder_ops, file_search
 from api.api_kg import api_kg_resource
 from api.api_notification import notification, unsubscribe
 from api import api_preview
@@ -65,3 +65,4 @@ def api_registry(app: FastAPI):
     app.include_router(api_workbench.router, prefix="/v1")
     app.include_router(resource_request.router, prefix="/v1")
     app.include_router(file_stats.router, prefix="/v1")
+    app.include_router(file_search.router, prefix="/v1")

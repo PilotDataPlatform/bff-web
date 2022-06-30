@@ -37,7 +37,7 @@ class FolderCreation:
 
     @router.post(
         '/containers/{project_id}/folder',
-        summary="List workbench entries",
+        summary="Create a folder in a project",
         dependencies=[Depends(PermissionsCheck("file", "*", "upload"))]
     )
     async def post(self, project_id: str, request: Request):

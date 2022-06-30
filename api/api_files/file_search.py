@@ -38,7 +38,7 @@ class FileSearch:
         '/{project_id}/files/search',
         summary="Search files in ES",
     )
-    async def get(self, project_geid: str, request: Request):
+    async def get(self, project_id: str, request: Request):
         """
             Fetch file info from Elastic Search
         """
@@ -54,8 +54,8 @@ class FileSearch:
 
         query = json.loads(query)
         if self.current_identity['role'] != 'admin':
-            project_code = get_project_code_from_request({"project_geid": project_geid})
-            project_role = get_project_role(project_code)
+            project_code = get_project_code_from_request({"project_geid": project_id})
+            project_role = get_project_role(project_code, self.current_identity)
             if project_role == 'contributor':
                 # Make sure contributor is restrict to querying there own files/folders
                 # the reason use display_path is all own files/folders under user's name folder
@@ -104,7 +104,7 @@ class FileSearch:
                     return _res.json_response()
 
         project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=project_geid)
+        project = await project_client.get(id=project_id)
         project_code = project.code
 
         try:

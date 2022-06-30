@@ -28,10 +28,9 @@ router = APIRouter(tags=["Unsubscribe"])
 class UnsubscribeRestful:
     current_identity: dict = Depends(jwt_required)
 
-    @router.get(
+    @router.post(
         '/unsubscribe',
         summary="Create entry",
-        dependencies=[Depends(PermissionsCheck("workbench", "*", "view"))]
     )
     async def post(self, request: Request):
         api_response = APIResponse()

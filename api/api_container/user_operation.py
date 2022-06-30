@@ -133,7 +133,6 @@ class UserContainerQuery:
     @router.post(
         '/users/{username}/containers',
         summary="Query user's containers",
-        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
     )
     async def post(self, username: str, request: Request):
         '''

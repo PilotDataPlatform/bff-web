@@ -74,7 +74,7 @@ class Archive:
 
     def has_file_permissions(self, project_code, file_info):
         if self.current_identity["role"] != "admin":
-            role = get_project_role(project_code)
+            role = get_project_role(project_code, self.current_identity)
             if role != "admin":
                 root_folder = file_info["parent_path"].split(".")[0]
                 if role == "contributor":

@@ -120,7 +120,7 @@ def validate_delete_permissions(targets: list, project_code, current_identity):
         Project contributor can only delete the greenroom file belong to them (confirm the file is greenroom file,
         and has owned by current user)
     '''
-    user_project_role = get_project_role(project_code)
+    user_project_role = get_project_role(project_code, current_identity)
     if user_project_role not in ["admin", "platform-admin"]:
         for target in targets:
             source = get_entity_by_id(target['id'])

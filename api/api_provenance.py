@@ -15,7 +15,7 @@
 import json
 
 import requests
-from common import LoggerFactory
+from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
@@ -24,8 +24,7 @@ from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 from services.permissions_service.decorators import PermissionsCheck
-from services.permissions_service.utils import (get_project_code_from_request,
-                                                get_project_role)
+from services.permissions_service.utils import get_project_role
 
 _logger = LoggerFactory('api_provenance').get_logger()
 
@@ -98,8 +97,9 @@ class AuditLog:
                 params['action'] = action
 
             if self.current_identity['role'] != 'admin':
-                project_code = get_project_code_from_request({"project_id": project_id})
-                project_role = get_project_role(project_code)
+                project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                project = await project_client.get(id=project_id)
+                project_role = get_project_role(project.code, self.current_identity)
 
                 if project_role != 'admin':
                     operator = self.current_identity['username']
@@ -123,6 +123,7 @@ class AuditLog:
             return response.json()
 
         except Exception as e:
+            raise e
             _logger.error(
                 'Failed to query audit log from provenance service:   ' + str(e))
             _res.set_code(EAPIResponseCode.internal_error)

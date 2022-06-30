@@ -95,7 +95,7 @@ class Download:
     def has_file_permissions(self, project_code, file_node):
         zone = "greenroom" if file_node["zone"] == 0 else "core"
         if self.current_identity["role"] != "admin":
-            role = get_project_role(project_code)
+            role = get_project_role(project_code, self.current_identity)
             if role not in ["admin", "platform_admin"]:
                 root_folder = file_node["parent_path"].split(".")[0]
                 if role == "contributor":

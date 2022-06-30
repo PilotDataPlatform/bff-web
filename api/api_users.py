@@ -45,7 +45,7 @@ class UserRestful:
                 api_response.set_error_msg("Username doesn't match current user")
                 api_response.set_code(EAPIResponseCode.forbidden)
                 return api_response.json_response()
-            if get_project_role(project_code) != "admin":
+            if get_project_role(project_code, self.current_identity) != "admin":
                 api_response.set_error_msg("Username doesn't match current user")
                 api_response.set_code(EAPIResponseCode.forbidden)
                 return api_response.json_response()
