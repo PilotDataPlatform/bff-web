@@ -9,7 +9,7 @@
 The BFF is a proxy layer to allow easy access to the pilot microservices from a frontend application. BFF will handling calling the correct APIs to check permissions before calling the microservices.
 
 ## Built With
- - [Flask](https://flask.palletsprojects.com): Python web framework
+ - [FastAPI](https://fastapi.tiangolo.com/): Async API framework
  - [poetry](https://python-poetry.org/): python package management
  - [docker](https://docker.com)
 
@@ -24,7 +24,7 @@ The BFF is a proxy layer to allow easy access to the pilot microservices from a 
  ```
  pip install poetry
  ```
- 
+
  ## Installation
 
  1. git clone the project:
@@ -62,7 +62,7 @@ Port can be configured with the environment variable `PORT`
 
 ## API Documents
 
-REST API documentation in the form of Swagger/OpenAPI can be found here: [Api Document](https://pilotdataplatform.github.io/api-docs/) 
+REST API documentation in the form of Swagger/OpenAPI can be found here: [Api Document](https://pilotdataplatform.github.io/api-docs/)
 
 
 ## Helm Charts

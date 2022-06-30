@@ -1,3 +1,3 @@
 #!/bin/sh
 
-gunicorn -c gunicorn_config.py "run:flaskapp"
+gunicorn -c gunicorn_config.py "run:app" -k uvicorn.workers.UvicornWorker

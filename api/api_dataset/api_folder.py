@@ -14,46 +14,42 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
 from common import LoggerFactory
-from flask import request
-from flask_jwt import current_identity
-from flask_jwt import jwt_required
-from flask_restx import Resource
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi_utils import cbv
 
-from api import module_api
+from app.auth import jwt_required
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
-from models.api_response import APIResponse
-from models.api_response import EAPIResponseCode
+from models.api_response import APIResponse, EAPIResponseCode
+from services.permissions_service.decorators import DatasetPermission
 
-from .utils import check_dataset_permissions
-
-api_resource = module_api.namespace('DatasetProxy', description='Folder  API', path='/v1/dataset/')
+router = APIRouter(tags=["Dataset Folder"])
 
 _logger = LoggerFactory('api_versions').get_logger()
 
 
-class APIDatasetFolder(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(self.DatasetFolder, '/<dataset_id>/folder')
+@cbv.cbv(router)
+class DatasetFolder:
+    current_identity: dict = Depends(jwt_required)
 
-    class DatasetFolder(Resource):
-        @jwt_required()
-        def post(self, dataset_id):
-            _logger.info('POST dataset folder proxy')
-            api_response = APIResponse()
-            valid, response = check_dataset_permissions(dataset_id)
-            if not valid:
-                return response.to_dict, response.code
-
-            payload = {
-                'username': current_identity['username'],
-                **request.get_json()
-            }
-            try:
-                response = requests.post(ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/folder', json=payload)
-            except Exception as e:
-                _logger.info(f'Error calling dataset service: {str(e)}')
-                api_response.set_code(EAPIResponseCode.internal_error)
-                api_response.set_result(f'Error calling dataset service: {str(e)}')
-                return api_response.to_dict, api_response.code
-            return response.json(), response.status_code
+    @router.post(
+        '/dataset/{dataset_id}/folder',
+        summary="Create empty folder in dataset",
+        dependencies=[Depends(DatasetPermission())],
+    )
+    async def post(self, dataset_id: str, request: Request):
+        _logger.info('POST dataset folder proxy')
+        api_response = APIResponse()
+        data = await request.json()
+        payload = {
+            'username': self.current_identity['username'],
+            **data
+        }
+        try:
+            response = requests.post(ConfigClass.DATASET_SERVICE + f'dataset/{dataset_id}/folder', json=payload)
+        except Exception as e:
+            _logger.info(f'Error calling dataset service: {str(e)}')
+            api_response.set_code(EAPIResponseCode.internal_error)
+            api_response.set_result(f'Error calling dataset service: {str(e)}')
+            return api_response.json_response()
+        return JSONResponse(content=response.json(), status_code=response.status_code)

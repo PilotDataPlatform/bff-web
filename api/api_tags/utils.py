@@ -17,7 +17,7 @@ from resources.error_handler import APIException
 from services.permissions_service.utils import get_project_role, has_permission
 
 
-def check_tag_permissions(entity: dict, username: str):
+def check_tag_permissions(entity: dict, current_identity: dict):
     name_folder = entity["parent_path"].split(".")[0]
 
     if entity["zone"] == 0:
@@ -25,13 +25,13 @@ def check_tag_permissions(entity: dict, username: str):
     else:
         zone = 'core'
 
-    if not has_permission(entity["container_code"], 'tags', zone, 'create'):
+    if not has_permission(entity["container_code"], 'tags', zone, 'create', current_identity):
         raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
 
-    role = get_project_role(entity["container_code"])
-    if role == "contributor" and username != name_folder:
+    role = get_project_role(entity["container_code"], current_identity)
+    if role == "contributor" and current_identity["username"] != name_folder:
         raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
-    if role == "collaborator" and zone != "core" and username != name_folder:
+    if role == "collaborator" and zone != "core" and current_identity["username"] != name_folder:
         raise APIException(error_msg="Permission Denied", status_code=EAPIResponseCode.forbidden.value)
 
 

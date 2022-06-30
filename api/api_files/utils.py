@@ -12,10 +12,11 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from config import ConfigClass
 import requests
-from resources.error_handler import APIException
+
+from config import ConfigClass
 from models.api_response import EAPIResponseCode
+from resources.error_handler import APIException
 
 
 def get_collection_by_id(collection_geid):

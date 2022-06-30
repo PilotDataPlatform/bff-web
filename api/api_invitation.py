@@ -13,116 +13,123 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
-from common import LoggerFactory, ProjectClientSync
+from common import LoggerFactory, ProjectClient
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi_utils import cbv
 
-from api import module_api
+from app.auth import jwt_required
 from config import ConfigClass
-from models.api_meta_class import MetaAPI
 from models.api_response import APIResponse, EAPIResponseCode
 from resources.error_handler import APIException
-from resources.swagger_modules import (
-    create_invitation_request_model,
-    create_invitation_return_example,
-)
 from resources.utils import check_invite_permissions
 from services.permissions_service.utils import has_permission
 
-api_ns_invitations = module_api.namespace('Invitation Restful', description='Portal Invitation Restful', path='/v1')
-api_ns_invitation = module_api.namespace('Invitation Restful', description='Portal Invitation Restful', path='/v1')
+router = APIRouter(tags=["Invitations"])
 
 
-class APIInvitation(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_invitations.add_resource(self.InvitationsRestful, '/invitations')
-        api_ns_invitation.add_resource(self.CheckUserPlatformRole, '/invitation/check/<email>')
-        api_ns_invitation.add_resource(self.PendingUserRestful, '/invitation-list')
+@cbv.cbv(router)
+class InvitationsRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class InvitationsRestful(Resource):
-        @api_ns_invitations.expect(create_invitation_request_model)
-        @api_ns_invitations.response(200, create_invitation_return_example)
-        @jwt_required()
-        def post(self):
-            """This method allow to create invitation in platform."""
-            _logger = LoggerFactory('api_invitation').get_logger()
-            my_res = APIResponse()
-            post_json = request.get_json()
-            relation_data = post_json.get('relationship', {})
+    @router.post(
+        '/invitations',
+        summary="create invitation in platform",
+    )
+    async def post(self, request: Request):
+        """This method allow to create invitation in platform."""
+        _logger = LoggerFactory('api_invitation').get_logger()
+        my_res = APIResponse()
+        post_json = await request.json()
+        relation_data = post_json.get('relationship', {})
 
-            _logger.info(f'Start Creating Invitation: {post_json}')
+        _logger.info(f'Start Creating Invitation: {post_json}')
 
-            if relation_data:
-                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                project = project_client.get(id=relation_data.get('project_geid'))
+        if relation_data:
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = await project_client.get(id=relation_data.get('project_geid'))
 
-                if not check_invite_permissions(project.json(), current_identity):
-                    my_res.set_result('Permission denied')
-                    my_res.set_code(EAPIResponseCode.forbidden)
-                    return my_res.to_dict, my_res.code
+            if not check_invite_permissions(await project.json(), self.current_identity):
+                my_res.set_result('Permission denied')
+                my_res.set_code(EAPIResponseCode.forbidden)
+                return my_res.json_response()
 
-            try:
-                post_json['invited_by'] = current_identity['username']
-                response = requests.post(ConfigClass.AUTH_SERVICE + 'invitations', json=post_json)
-            except Exception as e:
-                error_msg = f'Error calling Auth service for invite create: {e}'
-                _logger.error(error_msg)
-                raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
-            return response.json(), response.status_code
+        try:
+            post_json['invited_by'] = self.current_identity['username']
+            response = requests.post(ConfigClass.AUTH_SERVICE + 'invitations', json=post_json)
+        except Exception as e:
+            error_msg = f'Error calling Auth service for invite create: {e}'
+            _logger.error(error_msg)
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
-    class CheckUserPlatformRole(Resource):
-        @jwt_required()
-        def get(self, email):
-            """This method allow to get user's detail on the platform."""
-            my_res = APIResponse()
-            _logger = LoggerFactory('api_invitation').get_logger()
-            project_geid = request.args.get('project_geid')
 
-            if current_identity['role'] != 'admin' and not project_geid:
+@cbv.cbv(router)
+class CheckUserPlatformRole:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/invitation/check/{email}',
+        summary="Check if a user exists",
+    )
+    async def get(self, email: str, request: Request):
+        my_res = APIResponse()
+        _logger = LoggerFactory('api_invitation').get_logger()
+        project_id = request.query_params.get('project_id')
+
+        if self.current_identity['role'] != 'admin' and not project_id:
+            my_res.set_result('Permission denied')
+            my_res.set_code(EAPIResponseCode.unauthorized)
+            return my_res.json_response()
+
+        params = {}
+        if project_id:
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = await project_client.get(id=project_id)
+
+            if not has_permission(project.code, 'invite', '*', 'create', self.current_identity):
                 my_res.set_result('Permission denied')
                 my_res.set_code(EAPIResponseCode.unauthorized)
-                return my_res.to_dict, my_res.code
+                return my_res.json_response()
+            params["project_code"] = project.code
+        try:
+            response = requests.get(ConfigClass.AUTH_SERVICE + f'invitation/check/{email}', params=params)
+        except Exception as e:
+            error_msg = f'Error calling Auth service for invite check: {e}'
+            _logger.error(error_msg)
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        return JSONResponse(content=response.json(), status_code=response.status_code)
 
-            if project_geid:
-                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                project = project_client.get(id=project_geid)
 
-                if not has_permission(project.code, 'invite', '*', 'create'):
-                    my_res.set_result('Permission denied')
-                    my_res.set_code(EAPIResponseCode.unauthorized)
-                    return my_res.to_dict, my_res.code
-            try:
-                response = requests.get(ConfigClass.AUTH_SERVICE + f'invitation/check/{email}', params=request.args)
-            except Exception as e:
-                error_msg = f'Error calling Auth service for invite check: {e}'
-                _logger.error(error_msg)
-                raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
-            return response.json(), response.status_code
+@cbv.cbv(router)
+class PendingUserRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class PendingUserRestful(Resource):
-        @jwt_required()
-        def post(self):
-            """This method allow to get all pending users from invitation links."""
-            _logger = LoggerFactory('api_pending_users').get_logger()
-            _logger.info('fetching pending user api triggered')
-            my_res = APIResponse()
-            post_json = request.get_json()
+    @router.post(
+        '/invitation-list',
+        summary="list invitations",
+    )
+    async def post(self, request: Request):
+        """This method allow to get all pending users from invitation links."""
+        _logger = LoggerFactory('api_pending_users').get_logger()
+        _logger.info('fetching pending user api triggered')
+        my_res = APIResponse()
+        post_json = await request.json()
 
-            filters = post_json.get('filters', None)
-            project_geid = filters.get('project_id', None)
+        filters = post_json.get('filters', None)
+        project_id = filters.get('project_id', None)
 
-            if current_identity['role'] != 'admin':
-                project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                project = project_client.get(id=project_geid)
-                if not has_permission(project.code, 'invite', '*', 'view'):
-                    my_res.set_code(EAPIResponseCode.forbidden)
-                    my_res.set_error_msg('Permission denied')
-                    return my_res.to_dict, my_res.code
-            try:
-                response = requests.post(ConfigClass.AUTH_SERVICE + 'invitation-list/', json=post_json)
-            except Exception as e:
-                error_msg = f'Error calling Auth service for invite list: {e}'
-                _logger.error(error_msg)
-                raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
-            return response.json(), response.status_code
+        if self.current_identity['role'] != 'admin':
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project = await project_client.get(id=project_id)
+            if not has_permission(project.code, 'invite', '*', 'view'):
+                my_res.set_code(EAPIResponseCode.forbidden)
+                my_res.set_error_msg('Permission denied')
+                return my_res.json_response()
+        try:
+            response = requests.post(ConfigClass.AUTH_SERVICE + 'invitation-list/', json=post_json)
+        except Exception as e:
+            error_msg = f'Error calling Auth service for invite list: {e}'
+            _logger.error(error_msg)
+            raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
+        return JSONResponse(content=response.json(), status_code=response.status_code)

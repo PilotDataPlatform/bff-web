@@ -12,29 +12,32 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-import os
-
+import re
 import pytest
 import requests_mock
 from uuid import uuid4
 from config import ConfigClass
 
-from app import Flask
-from app import create_app
+from app.main import create_app
 from testcontainers.redis import RedisContainer
-
-
-@pytest.fixture
-def app():
-    app = Flask('flask_test', root_path=os.path.dirname(__file__))
-    return app
+from fastapi.testclient import TestClient
+from pytest_httpx import HTTPXMock
+from httpx import AsyncClient
+from async_asgi_testclient import TestClient as TestAsyncClient
 
 
 @pytest.fixture(scope='session')
 def test_client(redis):
     ConfigClass.REDIS_URL = redis.url
     app = create_app()
-    return app.test_client()
+    return TestClient(app)
+
+
+@pytest.fixture
+def test_async_client(redis):
+    ConfigClass.REDIS_URL = redis.url
+    app = create_app()
+    return TestAsyncClient(app)
 
 
 @pytest.fixture
@@ -45,16 +48,16 @@ def requests_mocker():
 
 
 @pytest.fixture
-def jwt_token_admin(mocker, requests_mocker):
-    jwt_mock(mocker, requests_mocker, "admin")
+def jwt_token_admin(mocker, httpx_mock):
+    jwt_mock(mocker, httpx_mock, "admin")
 
 
 @pytest.fixture
-def jwt_token_contrib(mocker, requests_mocker):
-    jwt_mock(mocker, requests_mocker, "member", "contributor", "test_project")
+def jwt_token_contrib(mocker, httpx_mock):
+    jwt_mock(mocker, httpx_mock, "member", "contributor", "test_project")
 
 
-def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = "", project_code: str = ""):
+def jwt_mock(mocker, httpx_mock: HTTPXMock, platform_role: str, project_role: str = "", project_code: str = ""):
     if platform_role == "admin":
         roles = ["platform-admin"]
     else:
@@ -83,6 +86,7 @@ def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = ""
         "email": "test@example.com",
         "group": roles,
     }
+    mocker.patch("app.auth.get_token", return_value="")
     mocker.patch("jwt.decode", return_value=token)
     mock_data = {
         "result": {
@@ -96,7 +100,12 @@ def jwt_mock(mocker, requests_mocker, platform_role: str, project_role: str = ""
             "role": platform_role,
         }
     }
-    requests_mocker.get(ConfigClass.AUTH_SERVICE + "admin/user", json=mock_data)
+    url = re.compile('^' + ConfigClass.AUTH_SERVICE + 'admin/user.*$')
+    httpx_mock.add_response(
+        method='GET',
+        url=url,
+        json=mock_data
+    )
 
 
 @pytest.fixture
@@ -106,7 +115,6 @@ def has_permission_true(mocker):
     mocker.patch("api.api_files.meta.has_permission", return_value=True)
     mocker.patch("api.api_data_manifest.data_manifest.has_permission", return_value=True)
     mocker.patch("api.api_tags.utils.has_permission", return_value=True)
-
 
 
 @pytest.fixture
@@ -131,11 +139,11 @@ def has_invalid_project_role(mocker):
     mocker.patch("api.api_data_manifest.data_manifest.get_project_role", return_value=None)
 
 
+#@pytest.fixture
+#def request_context(app):
+#    with app.test_request_context() as context:
+#        yield context
 
-@pytest.fixture
-def request_context(app):
-    with app.test_request_context() as context:
-        yield context
 
 
 @pytest.fixture(scope='session', autouse=True)

@@ -80,7 +80,7 @@ def test_update_tags_200(test_client, requests_mocker, jwt_token_admin, has_perm
         "inherit": True
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v2/entity/tags", json=payload, headers=headers)
+    response = test_client.post("/v2/entity/tags", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -116,7 +116,7 @@ def test_update_tags_inherit_200(test_client, requests_mocker, jwt_token_admin, 
         "inherit": True
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v2/entity/tags", json=payload, headers=headers)
+    response = test_client.post("/v2/entity/tags", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -154,7 +154,7 @@ def test_update_tags_only_files_200(test_client, requests_mocker, jwt_token_admi
         "inherit": True
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v2/entity/tags", json=payload, headers=headers)
+    response = test_client.post("/v2/entity/tags", json=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -190,5 +190,5 @@ def test_update_tags_remove_200(test_client, requests_mocker, jwt_token_admin, h
         "inherit": True
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.post("v2/entity/tags", json=payload, headers=headers)
+    response = test_client.post("/v2/entity/tags", json=payload, headers=headers)
     assert response.status_code == 200

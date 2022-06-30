@@ -67,7 +67,7 @@ def test_list_meta_admin_200(test_client, requests_mocker, jwt_token_admin, has_
         "project_code": "test_project"
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -92,7 +92,7 @@ def test_list_meta_contrib_200(test_client, requests_mocker, jwt_token_contrib, 
         "project_code": "test_project"
     }
     headers = {"Authorization": jwt_token_contrib}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -117,7 +117,7 @@ def test_list_meta_wrong_project_403(test_client, requests_mocker, jwt_token_con
         "project_code": "wrong_project"
     }
     headers = {"Authorization": jwt_token_contrib}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 403
 
 
@@ -144,7 +144,7 @@ def test_list_meta_contrib_permissions_403(test_client, requests_mocker, jwt_tok
         "project_code": "test_project"
     }
     headers = {"Authorization": jwt_token_contrib}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 403
 
 
@@ -169,7 +169,7 @@ def test_list_meta_bad_zone_400(test_client, requests_mocker, jwt_token_admin, h
         "project_code": "test_project"
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 400
 
 
@@ -194,7 +194,7 @@ def test_list_meta_bad_source_type_400(test_client, requests_mocker, jwt_token_a
         "project_code": "test_project"
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 400
 
 
@@ -221,7 +221,7 @@ def test_list_meta_filter_200(test_client, requests_mocker, jwt_token_admin, has
         "owner": "test%",
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 200
 
 
@@ -246,7 +246,7 @@ def test_list_meta_trash_200(test_client, requests_mocker, jwt_token_admin, has_
         "project_code": "test_project",
     }
     headers = {"Authorization": jwt_token_admin}
-    response = test_client.get("v1/files/meta", query_string=payload, headers=headers)
+    response = test_client.get("v1/files/meta", params=payload, headers=headers)
     assert response.status_code == 200
 
 

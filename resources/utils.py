@@ -12,14 +12,10 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from flask import request
 from config import ConfigClass
 import requests
-import json
-import math
 from datetime import timezone
 import datetime
-from models.api_response import APIResponse
 from services.permissions_service.utils import has_permission
 
 
@@ -29,7 +25,7 @@ def check_invite_permissions(dataset_node, current_identity):
         if current_identity["role"] != "admin":
             return False
     if current_identity["role"] != "admin":
-        if not has_permission(dataset_node["code"], 'invite', '*', 'create'):
+        if not has_permission(dataset_node["code"], 'invite', '*', 'create', current_identity):
             return False
     return True
 

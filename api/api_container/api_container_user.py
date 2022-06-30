@@ -13,44 +13,49 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from common import LoggerFactory, ProjectClientSync
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
+from common import LoggerFactory, ProjectClient
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
+from fastapi_utils import cbv
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import EAPIResponseCode
 from models.user_type import map_role_to_frontend
 from resources.error_handler import APIException
-from resources.swagger_modules import success_return
-from resources.utils import (add_user_to_ad_group, remove_user_from_project_group)
+from resources.utils import (add_user_to_ad_group,
+                             remove_user_from_project_group)
 from services.notifier_services.email_service import SrvEmail
-from services.permissions_service.decorators import permissions_check
-
-from .namespace import datasets_entity_ns
+from services.permissions_service.decorators import PermissionsCheck
 
 # init logger
 logger = LoggerFactory('api_container_user').get_logger()
+router = APIRouter(tags=["Container User Actions"])
 
 
-class ContainerUser(Resource):
+@cbv.cbv(router)
+class ContainerUser:
+    current_identity: dict = Depends(jwt_required)
 
-    @jwt_required()
-    @permissions_check('invite', '*', 'create')
-    def post(self, username, project_id):
+    @router.post(
+        '/containers/{project_id}/users/{username}',
+        summary="Add user to project",
+        dependencies=[Depends(PermissionsCheck("invite", "*", "create"))]
+    )
+    async def post(self, username: str, project_id: str, request: Request):
         """
         This method allow container admin to add single user to a specific container with permission.
         """
         logger.info('Call API for adding user {} to project {}'.format(username, str(project_id)))
 
         # Check if permission is provided
-        role = request.get_json().get("role", None)
+        role = await request.json().get("role", None)
         if role is None:
             logger.error('Error: user\'s role is required.')
-            return {'result': "User's role is required."},
+            return {'result': "User's role is required."}
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         # validate user and relationship
         user = validate_user(username)
@@ -64,7 +69,7 @@ class ContainerUser(Resource):
                 error = f'Error adding user to group {ConfigClass.AD_PROJECT_GROUP_PREFIX}{project.code}: ' + str(
                     error)
                 logger.info(error)
-                return {'result': error}, 500
+                return JSONResponse(content={'result': error}, status_code=500)
 
         # keycloak user role update
         is_updated, response, code = keycloak_user_role_update(
@@ -72,35 +77,44 @@ class ContainerUser(Resource):
             user_email,
             f"{project.code}-{role}",
             project.code,
-            current_identity["username"],
+            self.current_identity["username"],
         )
         if not is_updated:
             return response, code
+            return JSONResponse(content=response, status_code=code)
 
         # send email to user
         title = f"Project {project.code} Notification: New Invitation"
         template = "user_actions/invite.html"
-        send_email_user(user, project.name, username, role, title, template)
-        return {'result': 'success'}, 200
+        send_email_user(user, project.name, username, role, title, template, self.current_identity)
+        return JSONResponse(content={'result': 'success'}, status_code=200)
 
-    @datasets_entity_ns.response(200, success_return)
-    @jwt_required()
-    @permissions_check('users', '*', 'view')
-    def put(self, username, project_id):
+    @router.put(
+        '/containers/{project_id}/users/{username}',
+        summary="Update a users role in project",
+        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
+    )
+    async def put(self, username: str, project_id: str, request: Request):
         """
         This method allow user to update user's permission to a specific dataset.
         """
 
         logger.info(f'Call API for changing user {username} role in project {project_id}')
 
-        old_role = request.get_json().get("old_role", None)
-        new_role = request.get_json().get("new_role", None)
-        is_valid, res_valid, code = validate_payload(old_role=old_role, new_role=new_role, username=username)
+        data = await request.json()
+        old_role = data.get("old_role", None)
+        new_role = data.get("new_role", None)
+        is_valid, res_valid, code = validate_payload(
+            old_role=old_role,
+            new_role=new_role,
+            username=username,
+            current_identity=self.current_identity
+        )
         if not is_valid:
-            return res_valid, code
+            return JSONResponse(content=res_valid, status_code=code)
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         # validate user
         user = validate_user(username)
@@ -112,21 +126,23 @@ class ContainerUser(Resource):
             user_email,
             f"{project.code}-{new_role}",
             project.code,
-            current_identity["username"]
+            self.current_identity["username"]
         )
         if not is_updated:
-            return response, code
+            return JSONResponse(content=response, status_code=code)
 
         # send email
         title = f"Project {project.name} Notification: Role Modified"
         template = "role/update.html"
-        send_email_user(user, project.name, username, new_role, title, template)
-        return {'result': 'success'}, 200
+        send_email_user(user, project.name, username, new_role, title, template, self.current_identity)
+        return JSONResponse(content={'result': 'success'}, status_code=200)
 
-    @datasets_entity_ns.response(200, success_return)
-    @jwt_required()
-    @permissions_check('users', '*', 'view')
-    def delete(self, username, project_id):
+    @router.delete(
+        '/containers/{project_id}/users/{username}',
+        summary="Remove user from project",
+        dependencies=[Depends(PermissionsCheck("users", "*", "view"))]
+    )
+    async def delete(self, username: str, project_id: str):
         """
         This method allow user to remove user's permission to a specific container.
         """
@@ -135,8 +151,8 @@ class ContainerUser(Resource):
         user = validate_user(username)
         user_email = user["email"]
 
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
         response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params={"username": username})
         if response.status_code != 200:
             raise Exception(str(response.__dict__))
@@ -158,12 +174,12 @@ class ContainerUser(Resource):
             user_email,
             f"{project.code}-{project_role}",
             project.code,
-            current_identity["username"]
+            self.current_identity["username"]
         )
-        return {'result': 'success'}, 200
+        return {'result': 'success'}
 
 
-def validate_payload(old_role, new_role, username):
+def validate_payload(old_role, new_role, username, current_identity):
     if old_role is None or new_role is None:
         logger.error("User's old and new role is required.")
         return False, {'result': "User's old and new role is required."}, 403
@@ -207,7 +223,7 @@ def keycloak_user_role_update(operation: str, user_email: str, role: str, projec
     return True, None, 200
 
 
-def send_email_user(user, dataset_name, username, role, title, template):
+def send_email_user(user, dataset_name, username, role, title, template, current_identity):
     try:
         email = user['email']
         admin_name = current_identity["username"]

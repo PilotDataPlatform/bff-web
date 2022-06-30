@@ -51,20 +51,11 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    # the packaged modules
-    # api_modules = ["dataset"]
-    api_modules: List[str] = ["api"]
-
-    TIMEZONE: str = "CET"
-
-    USERNAME_REGEX: str = "^[a-z\d]{6,20}$"
     PROJECT_CODE_REGEX: str = "^[a-z][a-z0-9]{0,31}$"
     PROJECT_NAME_REGEX: str = "^.{1,100}$"
 
     CORE_ZONE_LABEL: str
     GREENROOM_ZONE_LABEL: str
-
-    PROJECT_NAME: str
 
     KEYCLOAK_REALM: str
 
@@ -77,34 +68,21 @@ class Settings(BaseSettings):
     PROVENANCE_SERVICE: str
     NOTIFY_SERVICE: str
     EMAIL_SERVICE: str
-    DATA_UPLOAD_SERVICE_CORE: str
-    DATA_UPLOAD_SERVICE_GREENROOM: str
     DATASET_SERVICE: str
     DOWNLOAD_SERVICE_CORE: str
     DOWNLOAD_SERVICE_GR: str
     APPROVAL_SERVICE: str
     METADATA_SERVICE: str
     PROJECT_SERVICE: str
+    KG_SERVICE: str
 
     REDIS_HOST: str
     REDIS_PORT: str
     REDIS_PASSWORD: str
 
-    # KONG API Gateway
-    KONG_BASE: str
-    KONG_PATH: str
-
-    # Knowledge Graph
-    KG_SERVICE: str
-    KG_SERVICE_STAGE: str = "http://kg.utility:5081"
-
-    # JWT
-    JWT_AUTH_URL_RULE: None = None
-
     # Email addresses
     EMAIL_SUPPORT: str
     EMAIL_ADMIN: str
-    EMAIL_HELPDESK: str
 
     # LDAP configs
     LDAP_URL: str
@@ -128,13 +106,6 @@ class Settings(BaseSettings):
     # Resource request
     RESOURCE_REQUEST_ADMIN: str
 
-    # BFF RDS
-    RDS_HOST: str
-    RDS_PORT: str
-    RDS_DBNAME: str
-    RDS_USER: str
-    RDS_PWD: str
-    RDS_SCHEMA_DEFAULT: str
     ICON_SIZE_LIMIT: int = 500 * 1000
 
     # MinIO
@@ -150,8 +121,6 @@ class Settings(BaseSettings):
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
     OPEN_TELEMETRY_PORT: int = 6831
 
-    COLLAB_TEST_PASS: str = ""
-
     def modify_values(self, settings):
         ENTITYINFO_HOST = settings.ENTITYINFO_SERVICE
         settings.ENTITYINFO_SERVICE = ENTITYINFO_HOST + "/v1/"
@@ -165,17 +134,10 @@ class Settings(BaseSettings):
         settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + "/v1/"
         settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE
         settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + "/v1/email"
-        settings.DATA_UPLOAD_SERVICE_CORE = settings.DATA_UPLOAD_SERVICE_CORE + "/v1"
-        settings.DATA_UPLOAD_SERVICE_GREENROOM = settings.DATA_UPLOAD_SERVICE_GREENROOM + "/v1"
         settings.DATASET_SERVICE = settings.DATASET_SERVICE + "/v1/"
         settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + "/v2/"
         settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + "/v2/"
-
-        settings.KONG_BASE = settings.KONG_BASE + settings.KONG_PATH
-        settings.KG_SERVICE = settings.KG_SERVICE + "/v1/" if settings.env == "test" else settings.KG_SERVICE_STAGE + "/v1/"
-
-        settings.OPS_DB_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
-        settings.SQLALCHEMY_DATABASE_URI = f"postgresql://{settings.RDS_USER}:{settings.RDS_PWD}@{settings.RDS_HOST}/{settings.RDS_DBNAME}"
+        settings.KG_SERVICE = settings.KG_SERVICE + "/v1/"
 
         settings.REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
         return settings

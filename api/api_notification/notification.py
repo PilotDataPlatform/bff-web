@@ -13,96 +13,104 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import requests
-from flask_restx import Resource
-from flask_jwt import jwt_required, current_identity
-from models.api_meta_class import MetaAPI
-from flask import request
-from models.api_response import APIResponse
-from api import module_api
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
+
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
 
-api_resource = module_api.namespace(
-    'Notification', description='Notification API', path='/v1')
+router = APIRouter(tags=["Notifications"])
 
 
-class APINotification(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(
-            self.NotificationRestful, '/notification')
+@cbv.cbv(router)
+class NotificationRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class NotificationRestful(Resource):
-        @jwt_required()
-        def get(self):
-            api_response = APIResponse()
-            params = request.args
-            response = requests.get(ConfigClass.NOTIFY_SERVICE+'/v1/notification', params=params)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
+    @router.get(
+        '/notification',
+        summary="Get notifications",
+    )
+    async def get(self, request: Request):
+        api_response = APIResponse()
+        params = request.query_params
+        response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()
 
-        @jwt_required()
-        def post(self):
-            api_response = APIResponse()
-            if current_identity["role"] != "admin":
-                api_response.set_error_msg("Permission denied")
-                api_response.set_code(EAPIResponseCode.forbidden)
-                return api_response.to_dict, api_response.code
-            body = request.get_json()
-            response = requests.post(ConfigClass.NOTIFY_SERVICE+'/v1/notification', json=body)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
+    @router.post(
+        '/notification',
+        summary="create notification",
+    )
+    async def post(self, request: Request):
+        api_response = APIResponse()
+        if self.current_identity["role"] != "admin":
+            api_response.set_error_msg("Permission denied")
+            api_response.set_code(EAPIResponseCode.forbidden)
+            return api_response.json_response()
+        body = await request.json()
+        response = requests.post(ConfigClass.NOTIFY_SERVICE + '/v1/notification', json=body)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()
 
-        @jwt_required()
-        def put(self):
-            api_response = APIResponse()
-            if current_identity["role"] != "admin":
-                api_response.set_error_msg("Permission denied")
-                api_response.set_code(EAPIResponseCode.forbidden)
-                return api_response.to_dict, api_response.code
-            params = request.args
-            body = request.get_json()
-            response = requests.put(ConfigClass.NOTIFY_SERVICE+'/v1/notification', params=params, json=body)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
-        
-        @jwt_required()
-        def delete(self):
-            api_response = APIResponse()
-            if current_identity["role"] != "admin":
-                api_response.set_error_msg("Permission denied")
-                api_response.set_code(EAPIResponseCode.forbidden)
-                return api_response.to_dict, api_response.code
-            params = request.args
-            response = requests.delete(ConfigClass.NOTIFY_SERVICE+'/v1/notification', params=params)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
+    @router.put(
+        '/notification',
+        summary="update notification",
+    )
+    async def put(self, request: Request):
+        api_response = APIResponse()
+        if self.current_identity["role"] != "admin":
+            api_response.set_error_msg("Permission denied")
+            api_response.set_code(EAPIResponseCode.forbidden)
+            return api_response.json_response()
+        params = request.query_params
+        body = await request.json()
+        response = requests.put(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params, json=body)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()
+
+    @router.delete(
+        '/notification',
+        summary="delete notification",
+    )
+    async def delete(self, request: Request):
+        api_response = APIResponse()
+        if self.current_identity["role"] != "admin":
+            api_response.set_error_msg("Permission denied")
+            api_response.set_code(EAPIResponseCode.forbidden)
+            return api_response.json_response()
+        params = request.query_params
+        response = requests.delete(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()
 
 
-class APINotifications(metaclass=MetaAPI):
-    def api_registry(self):
-        api_resource.add_resource(
-            self.NotificationsRestful, '/notifications')
+@cbv.cbv(router)
+class NotificationsRestful:
+    current_identity: dict = Depends(jwt_required)
 
-    class NotificationsRestful(Resource):
-        @jwt_required()
-        def get(self):
-            api_response = APIResponse()
-            params = request.args
-            response = requests.get(ConfigClass.NOTIFY_SERVICE+'/v1/notifications', params=params)
-            if response.status_code != 200:
-                api_response.set_error_msg(response.json())
-                return api_response.to_dict, response.status_code
-            api_response.set_result(response.json())
-            return api_response.to_dict, api_response.code
+    @router.get(
+        '/notifications',
+        summary="list notification",
+    )
+    async def get(self, request: Request):
+        api_response = APIResponse()
+        params = request.query_params
+        response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notifications', params=params)
+        if response.status_code != 200:
+            api_response.set_error_msg(response.json())
+            return api_response.json_response()
+        api_response.set_result(response.json())
+        return api_response.json_response()

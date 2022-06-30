@@ -12,17 +12,14 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from app import create_app
-from common import LoggerFactory
-import multiprocessing
+import uvicorn
 
-flaskapp = create_app()
+from app.main import create_app
+from common import LoggerFactory
+from config import ConfigClass
+
 main_logger = LoggerFactory('main').get_logger()
 
-# add to https
-# trigger cicd ####
-
+app = create_app()
 if __name__ == '__main__':
-    main_logger.info('Start Flask App')
-    main_logger.info('CPU Core: ' + str(multiprocessing.cpu_count()))
-    flaskapp.run(debug=True)
+    uvicorn.run('run:app', host=ConfigClass.host, port=ConfigClass.port, log_level='info', reload=True)

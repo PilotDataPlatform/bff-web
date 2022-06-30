@@ -14,26 +14,23 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import jwt as pyjwt
 import requests
-from common import LoggerFactory, ProjectClientSync
-from flask import request
-from flask_restx import Resource
+from common import ProjectClient
+from fastapi import APIRouter, Request
+from fastapi_utils import cbv
 
 from config import ConfigClass
-from resources.swagger_modules import new_user_module, user_sample_return
 
-from .namespace import users_entity_ns
+router = APIRouter(tags=["User Activate"])
 
 
-class ADUserUpdate(Resource):
+@cbv.cbv(router)
+class ADUserUpdate:
 
-    logger = LoggerFactory('api_aduser_update').get_logger()
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-
-    @users_entity_ns.expect(new_user_module)
-    @users_entity_ns.response(200, user_sample_return)
-    def put(self):
+    @router.put(
+        '/users',
+        summary="Activate AD user account on platform",
+    )
+    async def put(self, request: Request):
         """
         This method allow user to activate the AD user account on platform.
         """
@@ -48,7 +45,7 @@ class ADUserUpdate(Resource):
 
         try:
             # validate payload request body
-            post_data = request.get_json()
+            post_data = await request.json()
             self.logger.info('Calling API for updating AD user: {}'.format(post_data))
 
             email = post_data.get('email', None)
@@ -80,11 +77,11 @@ class ADUserUpdate(Resource):
                 # role means platform_role, else role means the project_role
                 if invite_detail["platform_role"] == "admin":
                     self.assign_user_role_ad("platform-admin", email=email)
-                    self.bulk_create_name_folder_admin(username)
+                    await self.bulk_create_name_folder_admin(username)
                 else:
                     if invite_detail["project_code"]:
-                        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-                        project = project_client.get(code=invite_detail["project_code"])
+                        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+                        project = await project_client.get(code=invite_detail["project_code"])
                         self.assign_user_role_ad(project.code + '-' + invite_detail["project_role"], email=email)
                         self.bulk_create_folder(folder_name=username, project_code_list=[project.code])
 
@@ -159,11 +156,11 @@ class ADUserUpdate(Resource):
                         {error}")
             raise error
 
-    def bulk_create_name_folder_admin(self, username):
+    async def bulk_create_name_folder_admin(self, username):
         try:
             project_code_list = []
-            project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project_result = project_client.search()
+            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+            project_result = await project_client.search()
             projects = project_result["result"]
             for project in projects:
                 project_code_list.append(project.code)

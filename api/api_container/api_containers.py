@@ -12,21 +12,28 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from common import LoggerFactory, ProjectClientSync
-from flask import request
-from flask_jwt import current_identity, jwt_required
-from flask_restx import Resource
+from common import LoggerFactory, ProjectClient
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
 
+from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse
-from services.permissions_service.decorators import permissions_check
 
 logger = LoggerFactory('api_containers').get_logger()
 
+router = APIRouter(tags=["Containers"])
 
-class Containers(Resource):
-    @jwt_required()
-    def get(self):
+
+@cbv.cbv(router)
+class Containers:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.get(
+        '/containers/',
+        summary="List and query all projects",
+    )
+    async def get(self, request: Request):
         """
             List and Query on all projects"
         """
@@ -34,64 +41,69 @@ class Containers(Resource):
         api_response = APIResponse()
 
         name = None
-        if request.args.get("name"):
-            name = "%" + request.args.get("name") + "%"
+        if request.query_params.get("name"):
+            name = "%" + request.query_params.get("name") + "%"
         code = None
-        if request.args.get("code"):
-            code = "%" + request.args.get("code") + "%"
+        if request.query_params.get("code"):
+            code = "%" + request.query_params.get("code") + "%"
 
         description = None
-        if request.args.get("description"):
-            description = "%" + request.args.get("description") + "%"
+        if request.query_params.get("description"):
+            description = "%" + request.query_params.get("description") + "%"
 
-        tags = request.args.get('tags')
+        tags = request.query_params.get('tags')
         if tags:
             tags = tags.split(",")
 
         payload = {
-            "page": request.args.get("page"),
-            "page_size": request.args.get("page_size"),
-            "order_by": request.args.get("order_by"),
-            "order_type": request.args.get("order_type"),
+            "page": request.query_params.get("page"),
+            "page_size": request.query_params.get("page_size"),
+            "order_by": request.query_params.get("order_by"),
+            "order_type": request.query_params.get("order_type"),
             "name": name,
             "code": code,
             "tags_all": tags,
             "description": description,
         }
-        if current_identity["role"] != "admin":
+        if self.current_identity["role"] != "admin":
             payload["is_discoverable"] = True
 
-        if "create_time_start" in request.args and "create_time_end" in request.args:
-            payload["created_at_start"] = request.args.get("create_time_start")
-            payload["created_at_end"] = request.args.get("create_time_end")
+        if "create_time_start" in request.query_params and "create_time_end" in request.query_params:
+            payload["created_at_start"] = request.query_params.get("create_time_start")
+            payload["created_at_end"] = request.query_params.get("create_time_end")
 
         result = {}
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        result = project_client.search(**payload)
-        api_response.set_result([i.json() for i in result["result"]])
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        result = await project_client.search(**payload)
+        api_response.set_result([await i.json() for i in result["result"]])
         api_response.set_total(result["total"])
         api_response.set_num_of_pages(result["num_of_pages"])
-        return api_response.to_dict, api_response.code
+        return api_response.json_response()
 
 
-class Container(Resource):
-    @jwt_required()
-    @permissions_check('project', '*', 'update')
-    def put(self, project_id):
+@cbv.cbv(router)
+class Container:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.put(
+        '/containers/{project_id}',
+        summary="Update a project",
+    )
+    async def put(self, project_id: str, request: Request):
         '''
         Update a project
         '''
         logger.info("Calling Container put")
         api_response = APIResponse()
-        update_data = request.get_json()
-        project_client = ProjectClientSync(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = project_client.get(id=project_id)
+        update_data = await request.json()
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=project_id)
 
         if "icon" in update_data:
             logo = update_data["icon"]
             project.upload_logo(logo)
             del update_data["icon"]
 
-        result = project.update(**update_data)
-        api_response.set_result(result.json())
-        return api_response.to_dict, api_response.code
+        result = await project.update(**update_data)
+        api_response.set_result(await result.json())
+        return api_response.json_response()

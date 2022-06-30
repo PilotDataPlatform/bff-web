@@ -12,26 +12,27 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
-from config import ConfigClass
-from flask_jwt import jwt_required, current_identity
-from flask_restx import Api, Resource, fields
-from flask import request
-from models.api_meta_class import MetaAPI
-from api import module_api
 import requests
+from fastapi import APIRouter, Depends, Request
+from fastapi_utils import cbv
 
-api_ns_kg_resource_proxy = module_api.namespace('KGResourceProxy', description='', path ='/v1')
+from app.auth import jwt_required
+from config import ConfigClass
 
-## for backend services down/on testing
-class APIKGResourceProxy(metaclass=MetaAPI):
-    def api_registry(self):
-        api_ns_kg_resource_proxy.add_resource(self.KGResource, '/kg/resources')
+router = APIRouter(tags=["Knowledge Graph"])
 
 
-    class KGResource(Resource):
-        @jwt_required()
-        def post(self):
-            url = ConfigClass.KG_SERVICE + "resources"
-            payload_json = request.get_json()
-            respon = requests.post(url, json=payload_json, headers=request.headers)
-            return respon.json(), respon.status_code
+# for backend services down/on testing
+@cbv.cbv(router)
+class KGResource:
+    current_identity: dict = Depends(jwt_required)
+
+    @router.post(
+        '/kg/resources',
+        summary="Knowledge graph",
+    )
+    async def post(self, request: Request):
+        url = ConfigClass.KG_SERVICE + "resources"
+        payload_json = await request.json()
+        respon = requests.post(url, json=payload_json, headers=request.headers)
+        return respon.json(), respon.status_code
