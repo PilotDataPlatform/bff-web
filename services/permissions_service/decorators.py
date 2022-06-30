@@ -42,7 +42,7 @@ class PermissionsCheck:
 
 class DatasetPermission:
     async def __call__(self, request: Request):
-        dataset_id = await request.path_params.get("dataset_id")
+        dataset_id = request.path_params.get("dataset_id")
         if not dataset_id:
             dataset_id = await request.json().get("dataset_id")
         dataset = get_dataset_by_id(dataset_id)
@@ -54,7 +54,7 @@ class DatasetPermission:
 
 class DatasetPermissionByCode:
     async def __call__(self, request: Request):
-        dataset_code = await request.path_params.get("dataset_code")
+        dataset_code = request.path_params.get("dataset_code")
         if not dataset_code:
             dataset_code = await request.json().get("dataset_code")
         dataset = get_dataset_by_code(dataset_code)
