@@ -31,7 +31,7 @@ class CodeRestful:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/dataset/dataset-peek/{dataset_code}',
+        '/dataset-peek/{dataset_code}',
         summary="Get dataset by code",
         dependencies=[Depends(DatasetPermissionByCode())]
     )
