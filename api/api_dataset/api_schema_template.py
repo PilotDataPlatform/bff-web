@@ -15,7 +15,7 @@
 import requests
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
-
+from fastapi.responses import JSONResponse
 from app.auth import jwt_required
 from config import ConfigClass
 from services.permissions_service.decorators import DatasetPermission
@@ -24,7 +24,7 @@ router = APIRouter(tags=["Dataset Schema Template"])
 
 
 @cbv.cbv(router)
-class SchemaTempalte:
+class SchemaTemplate:
     current_identity: dict = Depends(jwt_required)
 
     @router.post(
@@ -35,7 +35,7 @@ class SchemaTempalte:
     async def get(self, dataset_id: str, template_id: str, request: Request):
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
         respon = requests.get(url, params=request.query_params, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
     @router.put(
         '/dataset/{dataset_id}/schemaTPL/{template_id}',
@@ -46,7 +46,7 @@ class SchemaTempalte:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
         payload_json = await request.json()
         respon = requests.put(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
     @router.delete(
         '/dataset/{dataset_id}/schemaTPL/{template_id}',
@@ -57,7 +57,7 @@ class SchemaTempalte:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/{}'.format(dataset_id, template_id)
         payload_json = await request.json()
         respon = requests.delete(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -73,7 +73,7 @@ class SchemaTemplateCreate:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL'.format(dataset_id)
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -87,7 +87,7 @@ class SchemaTemplatePostQuery:
         url = ConfigClass.DATASET_SERVICE + 'dataset/{}/schemaTPL/list'.format(dataset_id)
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 ###################################################################################################
 
@@ -103,7 +103,7 @@ class SchemaTemplateDefaultQuery:
         url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/list'
         payload_json = await request.json()
         respon = requests.post(url, json=payload_json, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
 
 
 @cbv.cbv(router)
@@ -115,4 +115,4 @@ class SchemaTemplateDefaultGet:
     async def get(self, template_id: str, request: Request):
         url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_id)
         respon = requests.get(url, params=request.args, headers=request.headers)
-        return respon.json(), respon.status_code
+        return JSONResponse(content=respon.json(), status_code=respon.status_code)
