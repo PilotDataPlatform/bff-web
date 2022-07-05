@@ -27,7 +27,7 @@ router = APIRouter(tags=["Dataset Schema Template"])
 class SchemaTemplate:
     current_identity: dict = Depends(jwt_required)
 
-    @router.post(
+    @router.get(
         '/dataset/{dataset_id}/schemaTPL/{template_id}',
         summary="Get schema template by id",
         dependencies=[Depends(DatasetPermission())],
