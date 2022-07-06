@@ -13,7 +13,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
-import re
 from config import ConfigClass
 from uuid import uuid4
 import pytest
@@ -172,7 +171,8 @@ async def test_post_request_query_200(
             RESOURCE_REQUEST
         ]
     }
-    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/?page=0&page_size=25&order_by=request_date&order_type=asc"
+    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/\
+            ?page=0&page_size=25&order_by=request_date&order_type=asc"
     httpx_mock.add_response(
         method="GET",
         url=url,
@@ -204,7 +204,8 @@ async def test_post_request_query_contrib_200(
             RESOURCE_REQUEST
         ]
     }
-    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/?page=0&page_size=25&order_by=request_date&order_type=asc"
+    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/\
+            ?page=0&page_size=25&order_by=request_date&order_type=asc"
     httpx_mock.add_response(
         method="GET",
         url=url,
@@ -297,9 +298,7 @@ async def test_post_request_create_500(
     jwt_token_contrib,
     has_permission_true
 ):
-
     project_id = RESOURCE_REQUEST["project_id"]
-    username = USER["username"]
 
     url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/"
     httpx_mock.add_response(
