@@ -171,8 +171,9 @@ async def test_post_request_query_200(
             RESOURCE_REQUEST
         ]
     }
-    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/\
-            ?page=0&page_size=25&order_by=request_date&order_type=asc"
+    url = ConfigClass.PROJECT_SERVICE + (
+        "/v1/resource-requests/?page=0&page_size=25&order_by=request_date&order_type=asc"
+    )
     httpx_mock.add_response(
         method="GET",
         url=url,
@@ -204,8 +205,9 @@ async def test_post_request_query_contrib_200(
             RESOURCE_REQUEST
         ]
     }
-    url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/\
-            ?page=0&page_size=25&order_by=request_date&order_type=asc"
+    url = ConfigClass.PROJECT_SERVICE + (
+        "/v1/resource-requests/""?page=0&page_size=25&order_by=request_date&order_type=asc"
+    )
     httpx_mock.add_response(
         method="GET",
         url=url,
