@@ -96,7 +96,7 @@ class SchemaTemplatePostQuery:
 @cbv.cbv(router)
 class SchemaTemplateDefaultQuery:
     @router.post(
-        '/dataset/default/schemaTPL/list',
+        '/dataset/schemaTPL/default/list',
         summary="List and query schema templates",
     )
     async def post(self, request: Request):
@@ -109,7 +109,7 @@ class SchemaTemplateDefaultQuery:
 @cbv.cbv(router)
 class SchemaTemplateDefaultGet:
     @router.get(
-        '/dataset/default/schemaTPL/{template_id}',
+        '/dataset/schemaTPL/default/{template_id}',
         summary="Get default schema",
     )
     async def get(self, template_id: str, request: Request):
