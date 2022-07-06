@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import os
 from functools import lru_cache
 from typing import Any
@@ -75,6 +76,7 @@ class Settings(BaseSettings):
     METADATA_SERVICE: str
     PROJECT_SERVICE: str
     KG_SERVICE: str
+    SEARCH_SERVICE: str
 
     REDIS_HOST: str
     REDIS_PORT: str
@@ -153,7 +155,7 @@ class Settings(BaseSettings):
 
 
 @lru_cache(1)
-def get_settings():
+def get_settings() -> Settings:
     settings = Settings()
     settings = settings.modify_values(settings)
     return settings
