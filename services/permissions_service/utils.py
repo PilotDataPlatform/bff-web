@@ -72,11 +72,13 @@ def get_project_role(project_code, current_identity):
 async def get_project_code_from_request(request: Request):
     if request.method == "POST":
         data = await request.json()
-
     elif request.method == "DELETE":
-        data = await request.json()
+        data = request.query_params
         if not data:
-            data = await request.json()
+            try:
+                data = await request.json()
+            except Exception:
+                pass
     else:
         data = request.query_params
 

@@ -14,7 +14,6 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import math
 
-import requests
 import httpx
 from datetime import datetime
 from common import LoggerFactory, ProjectClient
@@ -135,10 +134,10 @@ class ResourceRequestComplete:
                 "exact": True,
             }
             user_response = await client.get(ConfigClass.AUTH_SERVICE + "admin/user", params=data)
-            if response.status_code != 200:
+            if user_response.status_code != 200:
                 raise APIException(
-                    error_msg=f"Error getting user {user_id} from auth service: " + user_response.json(),
-                    code=response.status_code
+                    error_msg=f"Error getting user {user_id} from auth service: " + str(user_response.json()),
+                    status_code=user_response.status_code
                 )
             user = user_response.json()["result"]
 
@@ -153,7 +152,7 @@ class ResourceRequestComplete:
         try:
             user_email = user["email"]
             email_sender = SrvEmail()
-            email_sender.send(
+            await email_sender.async_send(
                 f"Access granted to {requested_for}",
                 [user_email],
                 msg_type='html',
@@ -256,7 +255,7 @@ class ResourceRequests:
                 break
 
         if not user_role:
-            raise APIException(error_msg="Couldn't get user role", status_code=EAPIResponseCode.internal_error.value)
+            raise APIException(error_msg="Couldn't get user role", status_code=EAPIResponseCode.forbidden.value)
 
         payload = {
             "project_id": data.project_id,
@@ -270,17 +269,13 @@ class ResourceRequests:
                 raise APIException(error_msg=response.json(), status_code=response.status_code)
         resource_request = response.json()
 
-        # send_email
         username = self.current_identity["username"]
-        is_email_sent, email_res, code = send_email(resource_request, project, user_role, username)
-        if not is_email_sent:
-            return email_res, code
+        await send_email(resource_request, project, user_role, username)
         api_response.set_result(resource_request)
         return api_response.json_response()
 
 
-def send_email(resource_request, project, user_role, username):
-    api_response = APIResponse()
+async def send_email(resource_request, project, user_role, username):
     template_kwargs = {
         "username": username,
         "request_for": resource_request["requested_for"],
@@ -292,17 +287,17 @@ def send_email(resource_request, project, user_role, username):
     }
     try:
         query = {"username": ConfigClass.RESOURCE_REQUEST_ADMIN}
-        response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=query)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(ConfigClass.AUTH_SERVICE + "admin/user", params=query)
         admin_email = response.json()["result"]["email"]
     except Exception as e:
-        _logger.error("Error getting admin email: " + str(e))
-        api_response.set_code(EAPIResponseCode.internal_error)
-        api_response.set_result("Error getting admin email: " + str(e))
-        return False, api_response.to_dict, api_response.code
+        error_msg = "Error getting admin email: " + str(e)
+        _logger.error(error_msg)
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
     try:
         email_sender = SrvEmail()
-        email_sender.send(
+        await email_sender.async_send(
             "Resource Request from " + template_kwargs["username"],
             [admin_email],
             msg_type='html',
@@ -310,9 +305,7 @@ def send_email(resource_request, project, user_role, username):
             template_kwargs=template_kwargs,
         )
         _logger.info(f"Email sent to {admin_email}")
-        return True, None, 200
     except Exception as e:
-        _logger.error("Error sending email: " + str(e))
-        api_response.set_code(EAPIResponseCode.internal_error)
-        api_response.set_result("Error sending email: " + str(e))
-        return False, api_response.to_dict, api_response.code
+        error_msg = "Error sending email: " + str(e)
+        _logger.error(error_msg)
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)

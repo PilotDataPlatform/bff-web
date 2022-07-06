@@ -98,9 +98,10 @@ def jwt_mock(mocker, httpx_mock: HTTPXMock, platform_role: str, project_role: st
                 "status": "active"
             },
             "role": platform_role,
+            "realm_roles": []
         }
     }
-    url = re.compile('^' + ConfigClass.AUTH_SERVICE + 'admin/user.*$')
+    url = ConfigClass.AUTH_SERVICE + 'admin/user?username=test&exact=true'
     httpx_mock.add_response(
         method='GET',
         url=url,
