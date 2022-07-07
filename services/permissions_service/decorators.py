@@ -44,7 +44,8 @@ class DatasetPermission:
     async def __call__(self, request: Request):
         dataset_id = request.path_params.get("dataset_id")
         if not dataset_id:
-            dataset_id = await request.json().get("dataset_id")
+            data = await request.json()
+            dataset_id = data.get("dataset_id") or data.get("dataset_geid")
         dataset = get_dataset_by_id(dataset_id)
         current_identity = get_current_identity(request)
         if dataset["creator"] != current_identity["username"]:
