@@ -149,7 +149,7 @@ class FileMeta:
                         api_response.set_error_msg('Permission Denied')
                         return api_response.json_response()
 
-        if not zone:
+        if zone == "all":
             zone = "*"
         if not has_permission(project_code, "file", zone.lower(), "view", self.current_identity):
             username = self.current_identity["username"]
