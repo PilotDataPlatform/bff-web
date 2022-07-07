@@ -114,5 +114,5 @@ class SchemaTemplateDefaultGet:
     )
     async def get(self, template_id: str, request: Request):
         url = ConfigClass.DATASET_SERVICE + 'dataset/default/schemaTPL/{}'.format(template_id)
-        respon = requests.get(url, params=request.args, headers=request.headers)
+        respon = requests.get(url, params=request.query_params, headers=request.headers)
         return JSONResponse(content=respon.json(), status_code=respon.status_code)
