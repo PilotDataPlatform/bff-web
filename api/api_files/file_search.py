@@ -14,6 +14,7 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
 from typing import Any
+from typing import Dict
 
 import httpx
 from common import LoggerFactory
@@ -44,7 +45,7 @@ def get_zone_label(zone: int) -> str:
         return str(zone)
 
 
-def replace_zone_labels(response: dict[str, Any]) -> dict[str, Any]:
+def replace_zone_labels(response: Dict[str, Any]) -> Dict[str, Any]:
     """Replace zone numbers with string values."""
 
     total_per_zone = response['total_per_zone']
