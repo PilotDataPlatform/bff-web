@@ -13,6 +13,8 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 
+from typing import Any
+
 import httpx
 from common import LoggerFactory
 from common import ProjectClient
@@ -31,6 +33,31 @@ from services.permissions_service.utils import get_project_role
 _logger = LoggerFactory('api_files_ops_v4').get_logger()
 
 router = APIRouter(tags=['File Search'])
+
+
+def get_zone_label(zone: int) -> str:
+    """Get zone label for zone number."""
+
+    try:
+        return ConfigClass.ZONE_LABEL_MAPPING[zone]
+    except KeyError:
+        return str(zone)
+
+
+def replace_zone_labels(response: dict[str, Any]) -> dict[str, Any]:
+    """Replace zone numbers with string values."""
+
+    total_per_zone = response['total_per_zone']
+    zones = list(total_per_zone.keys())
+    for zone in zones:
+        new_key = get_zone_label(int(zone))
+        total_per_zone[new_key] = total_per_zone.pop(zone)
+
+    result = response['result']
+    for item in result:
+        item['zone'] = get_zone_label(item['zone'])
+
+    return response
 
 
 @cbv.cbv(router)
@@ -109,9 +136,9 @@ class FileSearch:
                 _res.set_code(EAPIResponseCode.internal_error)
                 _res.set_result('Failed to query data from search service')
                 return _res.json_response()
-            else:
-                _logger.info('Successfully Fetched file information')
-                return response.json()
+
+            _logger.info('Successfully Fetched file information')
+            return replace_zone_labels(response.json())
         except Exception as e:
             _logger.error(f'Failed to query data from search service: {e}')
             _res.set_code(EAPIResponseCode.internal_error)
