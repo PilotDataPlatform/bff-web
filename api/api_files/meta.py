@@ -102,12 +102,19 @@ class FileMeta:
             api_response.set_error_msg('Invalid zone')
             return api_response.json_response()
 
+        if zone == "greenroom":
+            zone_num = 0
+        elif zone == "core":
+            zone_num = 1
+        else:
+            zone_num = None
+
         payload = {
             "page": page,
             "page_size": page_size,
             "order": order_type,
             "sorting": order_by,
-            "zone": 0 if zone == "greenroom" else 1,
+            "zone": zone_num,
             "container_code": project_code,
             "recursive": False,
         }
@@ -142,6 +149,8 @@ class FileMeta:
                         api_response.set_error_msg('Permission Denied')
                         return api_response.json_response()
 
+        if not zone:
+            zone = "*"
         if not has_permission(project_code, "file", zone.lower(), "view", self.current_identity):
             username = self.current_identity["username"]
             _logger.info(f"Permissions denied for user {username} in meta listing")
