@@ -49,7 +49,8 @@ class ContainerUser:
         logger.info('Call API for adding user {} to project {}'.format(username, str(project_id)))
 
         # Check if permission is provided
-        role = await request.json().get("role", None)
+        data = await request.json()
+        role = data.get("role", None)
         if role is None:
             logger.error('Error: user\'s role is required.')
             return {'result': "User's role is required."}
