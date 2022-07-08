@@ -164,26 +164,26 @@ async def create_minio_bucket(project_code: str) -> None:
             else:
                 _logger.warn('Bucket encryption is not enabled, not encrypting %s' % bucket_name)
 
-            mc = await get_minio_policy_client(
-                ConfigClass.MINIO_ENDPOINT,
-                ConfigClass.MINIO_ACCESS_KEY,
-                ConfigClass.MINIO_SECRET_KEY,
-                https=ConfigClass.MINIO_HTTPS
-            )
+        mc = await get_minio_policy_client(
+            ConfigClass.MINIO_ENDPOINT,
+            ConfigClass.MINIO_ACCESS_KEY,
+            ConfigClass.MINIO_SECRET_KEY,
+            https=ConfigClass.MINIO_HTTPS
+        )
 
-            # add MinIO policies for respective bucket (admin, collaborator, contributor)
-            # the minio policy has to be the SAME name with keyloack role
-            # the role/policy name will be formated as:
-            # - <bucket_name>-admin
-            # - <bucket_name>-contributor
-            # - <bucket_name>-collaborator
-            admin_policy_content = get_admin_policy(project_code)
-            await mc.create_IAM_policy(bucket_name + '-admin', admin_policy_content)
-            contrib_policy_content = get_contributor_policy(project_code)
-            await mc.create_IAM_policy(bucket_name + '-contributor', contrib_policy_content)
-            collab_policy_content = get_collaborator_policy(project_code)
-            await mc.create_IAM_policy(bucket_name + '-collaborator', collab_policy_content)
-            _logger.info(f"MinIO policies successfully applied for: {bucket_name}")
+        # add MinIO policies for respective bucket (admin, collaborator, contributor)
+        # the minio policy has to be the SAME name with keyloack role
+        # the role/policy name will be formated as:
+        # - <project_code>-admin
+        # - <project_code>-contributor
+        # - <project_code>-collaborator
+        admin_policy_content = get_admin_policy(project_code)
+        await mc.create_IAM_policy(project_code + '-admin', admin_policy_content)
+        contrib_policy_content = get_contributor_policy(project_code)
+        await mc.create_IAM_policy(project_code + '-contributor', contrib_policy_content)
+        collab_policy_content = get_collaborator_policy(project_code)
+        await mc.create_IAM_policy(project_code + '-collaborator', collab_policy_content)
+        _logger.info(f"MinIO policies successfully applied for: {bucket_name}")
     except Exception as e:
         error_msg = f"Error when creating MinIO bucket and policies: {str(e)}"
         _logger.error(error_msg)
