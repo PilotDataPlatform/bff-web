@@ -135,13 +135,13 @@ class Settings(BaseSettings):
         settings.AUTH_SERVICE = settings.AUTH_SERVICE + '/v1/'
         settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + '/v1/'
         settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE
-        settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + "/v1/email"
-        settings.DATASET_SERVICE = settings.DATASET_SERVICE + "/v1/"
-        settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + "/v2/"
-        settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + "/v2/"
-        settings.KG_SERVICE = settings.KG_SERVICE + "/v1/"
+        settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + '/v1/email'
+        settings.DATASET_SERVICE = settings.DATASET_SERVICE + '/v1/'
+        settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + '/v2/'
+        settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + '/v2/'
+        settings.KG_SERVICE = settings.KG_SERVICE + '/v1/'
         settings.SEARCH_SERVICE = settings.SEARCH_SERVICE + '/v1/'
-        settings.REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+        settings.REDIS_URL = f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}'
         settings.ZONE_LABEL_MAPPING = {
             0: settings.GREENROOM_ZONE_LABEL,
             1: settings.CORE_ZONE_LABEL,

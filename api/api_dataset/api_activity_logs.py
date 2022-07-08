@@ -19,12 +19,13 @@ from fastapi import APIRouter
 from fastapi import Depends
 from fastapi import Request
 from fastapi_utils import cbv
+from starlette.datastructures import MultiDict
 
 from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse
 from models.api_response import EAPIResponseCode
-from resources.utils import get_dataset
+from resources.utils import get_dataset_by_code
 
 _logger = LoggerFactory('api_dataset').get_logger()
 
@@ -36,17 +37,17 @@ class ActivityLogs:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/activity-logs/{dataset_id}',
-        summary='Fetch activity logs of a dataset from the ES',
+        '/activity-logs/{dataset_code}',
+        summary='Fetch activity logs of a dataset from the search service',
     )
-    async def get(self, dataset_id: str, request: Request):
+    async def get(self, dataset_code: str, request: Request):
         """Fetch activity logs of a dataset."""
         _res = APIResponse()
-        _logger.info(f'Call API for fetching logs for dataset: {dataset_id}')
+        _logger.info(f'Call API for fetching logs for dataset: {dataset_code}')
 
         url = ConfigClass.SEARCH_SERVICE + 'dataset-activity-logs/'
         try:
-            dataset = get_dataset(dataset_id=dataset_id)
+            dataset = await get_dataset_by_code(dataset_code=dataset_code)
             if not dataset:
                 _res.set_code(EAPIResponseCode.bad_request)
                 _res.set_result('Dataset does not exist')
@@ -57,21 +58,9 @@ class ActivityLogs:
                 _res.set_result('No permission for this dataset')
                 return _res.json_response()
 
-            query_params = dict(request.query_params)
+            params = MultiDict(request.query_params)
+            params['container_code'] = dataset['code']
 
-            page_size = int(query_params.pop('page_size', 10))
-            page = int(query_params.pop('page', 0))
-            order_by = query_params.pop('order_by', 'activity_time')
-            order_type = query_params.pop('order_type', 'desc')
-
-            params = {
-                'page_size': page_size,
-                'page': page,
-                'sort_by': order_by,
-                'sort_type': order_type,
-                'container_code': dataset['code'],
-                **query_params,
-            }
             async with httpx.AsyncClient() as client:
                 _logger.info(f'Calling search service {url} with query params: {params}')
                 response = await client.get(url, params=params)
