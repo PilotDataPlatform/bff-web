@@ -37,7 +37,7 @@ class CopyRequest:
     )
     async def get(self, project_code: str, request: Request):
         api_response = APIResponse()
-        data = request.query_params
+        data = dict(request.query_params).copy()
         if get_project_role(project_code, self.current_identity) == "collaborator":
             data["submitted_by"] = self.current_identity["username"]
 
