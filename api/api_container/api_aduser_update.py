@@ -14,13 +14,16 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import jwt as pyjwt
 import requests
-from common import ProjectClient
+from common import ProjectClient, LoggerFactory
 from fastapi import APIRouter, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from config import ConfigClass
 
 router = APIRouter(tags=["User Activate"])
+
+logger = LoggerFactory('api_container_user').get_logger()
 
 
 @cbv.cbv(router)
@@ -46,7 +49,7 @@ class ADUserUpdate:
         try:
             # validate payload request body
             post_data = await request.json()
-            self.logger.info('Calling API for updating AD user: {}'.format(post_data))
+            logger.info('Calling API for updating AD user: {}'.format(post_data))
 
             email = post_data.get('email', None)
             username = post_data.get("username", None)
@@ -57,7 +60,7 @@ class ADUserUpdate:
                 raise Exception(f"The username is not matched: {current_username}")
 
             if not username or not first_name or not last_name or not email:
-                self.logger.error('[UserUpdateByEmail] Require field email/username/first_name/last_name.')
+                logger.error('[UserUpdateByEmail] Require field email/username/first_name/last_name.')
                 return {'result': 'Required information is not sufficient.'}, 400
 
             # use the invitation detail to check user roles
@@ -95,7 +98,7 @@ class ADUserUpdate:
             # update status/login
             return self.update_user_status(email)
         except Exception as error:
-            self.logger.error(f"Error when updating user data : {error}")
+            logger.error(f"Error when updating user data : {error}")
 
             return {"result": {}, "error_msg": str(error)}
 
@@ -105,11 +108,11 @@ class ADUserUpdate:
             "user_email": email,
         }
         response = requests.put(ConfigClass.AUTH_SERVICE + "user/account", json=payload)
-        self.logger.info('Update user in auth results: %s', response.json())
+        logger.info('Update user in auth results: %s', response.json())
         if response.status_code != 200:
-            self.logger.info('Done with updating user node')
+            logger.info('Done with updating user node')
             raise (Exception('Internal error when updating user data'))
-        return {"result": response.json()}, 200
+        return JSONResponse(content=response.json(), status_code=200)
 
     def assign_user_role_ad(self, role: str, email):
         url = ConfigClass.AUTH_SERVICE + "user/project-role"
@@ -127,7 +130,7 @@ class ADUserUpdate:
 
     def bulk_create_folder(self, folder_name: str, project_code_list: list):
         try:
-            self.logger.info(f"bulk creating namespace folder in greenroom \
+            logger.info(f"bulk creating namespace folder in greenroom \
                     and core for user : {folder_name} under {project_code_list}")
             zone_list = [ConfigClass.GREENROOM_ZONE_LABEL, ConfigClass.CORE_ZONE_LABEL]
 
@@ -148,10 +151,10 @@ class ADUserUpdate:
                     })
             response = requests.post(ConfigClass.METADATA_SERVICE + "items/batch/", json=folders)
             if response.status_code == 200:
-                self.logger.info(f"In namespace: {zone}, folders bulk created successfully for user: {folder_name} \
+                logger.info(f"In namespace: {zone}, folders bulk created successfully for user: {folder_name} \
                         under {project_code_list}")
         except Exception as error:
-            self.logger.error(
+            logger.error(
                 f"Error while trying to create namespace folder for user : {folder_name} under {project_code_list} : \
                         {error}")
             raise error
@@ -167,4 +170,4 @@ class ADUserUpdate:
             self.bulk_create_folder(folder_name=username, project_code_list=project_code_list)
             return False
         except Exception as error:
-            self.logger.error(f"Error while querying Container details : {error}")
+            logger.error(f"Error while querying Container details : {error}")
