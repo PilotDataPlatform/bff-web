@@ -127,7 +127,7 @@ class ResourceRequestComplete:
         project = await project_client.get(id=resource_request["project_id"])
 
         async with httpx.AsyncClient() as client:
-            user_id = resource_request["requested_by_user_id"]
+            user_id = resource_request["user_id"]
             data = {
                 "user_id": user_id,
                 "exact": True,

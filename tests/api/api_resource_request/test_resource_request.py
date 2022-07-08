@@ -20,7 +20,9 @@ import pytest
 
 RESOURCE_REQUEST = {
     "project_id": str(uuid4()),
-    "requested_by_user_id": str(uuid4()),
+    "user_id": str(uuid4()),
+    "username": "test@test.com",
+    "email": "test@test.com",
     "requested_for": "SuperSet",
     "completed_at": "2022-07-05T14:27:14.834812+00:00",
     "id": str(uuid4())
@@ -33,7 +35,7 @@ PROJECT = {
 }
 
 USER = {
-    "id": RESOURCE_REQUEST["requested_by_user_id"],
+    "id": RESOURCE_REQUEST["user_id"],
     "email": "test@test.com",
     "name": "test",
     "username": "test",
@@ -92,7 +94,7 @@ async def test_put_request_complete_200(
 ):
     request_id = RESOURCE_REQUEST["id"]
     project_id = RESOURCE_REQUEST["project_id"]
-    user_id = RESOURCE_REQUEST["requested_by_user_id"]
+    user_id = RESOURCE_REQUEST["user_id"]
 
     httpx_mock.add_response(
         method="GET",
@@ -135,7 +137,7 @@ async def test_put_request_complete_500(
     has_permission_true
 ):
     request_id = RESOURCE_REQUEST["id"]
-    user_id = RESOURCE_REQUEST["requested_by_user_id"]
+    user_id = RESOURCE_REQUEST["user_id"]
 
     httpx_mock.add_response(
         method="PATCH",
@@ -232,7 +234,6 @@ async def test_post_request_create_200(
 ):
 
     project_id = RESOURCE_REQUEST["project_id"]
-    username = USER["username"]
 
     url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/"
     httpx_mock.add_response(
@@ -244,7 +245,7 @@ async def test_post_request_create_200(
 
     httpx_mock.add_response(
         method="GET",
-        url=ConfigClass.AUTH_SERVICE + f"admin/user?username={username}",
+        url=ConfigClass.AUTH_SERVICE + f"admin/user?username={ConfigClass.RESOURCE_REQUEST_ADMIN}",
         json={'result': USER},
         status_code=200
     )
@@ -257,7 +258,7 @@ async def test_post_request_create_200(
     )
 
     payload = {
-        "user_id": RESOURCE_REQUEST["requested_by_user_id"],
+        "user_id": RESOURCE_REQUEST["user_id"],
         "project_id": project_id,
         "request_for": "SuperSet",
     }
@@ -285,7 +286,7 @@ async def test_post_request_create_403(
     )
 
     payload = {
-        "user_id": RESOURCE_REQUEST["requested_by_user_id"],
+        "user_id": RESOURCE_REQUEST["user_id"],
         "project_id": project_id,
         "request_for": "SuperSet",
     }
@@ -311,7 +312,7 @@ async def test_post_request_create_500(
     )
 
     payload = {
-        "user_id": RESOURCE_REQUEST["requested_by_user_id"],
+        "user_id": RESOURCE_REQUEST["user_id"],
         "project_id": project_id,
         "request_for": "SuperSet",
     }
