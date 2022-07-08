@@ -79,8 +79,6 @@ async def test_create_project_200(
         json={},
         status_code=404
     )
-    print(ConfigClass.PROJECT_SERVICE + "/v1/projects/" + payload.get("code"))
-    print("---")
 
     # icon
     project_id = json_response["id"]

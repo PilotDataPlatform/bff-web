@@ -14,7 +14,8 @@
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import math
 
-import requests
+import httpx
+from datetime import datetime
 from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
 from fastapi_utils import cbv
@@ -22,6 +23,7 @@ from fastapi_utils import cbv
 from app.auth import jwt_required
 from config import ConfigClass
 from models.api_response import APIResponse, EAPIResponseCode
+from models.resource_request import CreateResourceRequest
 from resources.error_handler import APIException
 from services.notifier_services.email_service import SrvEmail
 from services.permissions_service.decorators import PermissionsCheck
@@ -52,14 +54,16 @@ class ResourceRequest:
             return api_response.json_response()
 
         try:
-            # TODO call resource request API
-            pass
+            async with httpx.AsyncClient() as client:
+                url = ConfigClass.PROJECT_SERVICE + f"/v1/resource-requests/{request_id}"
+                response = await client.get(url)
         except Exception as e:
             _logger.error("Error calling resource request API: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            api_response.set_result("Psql Error: " + str(e))
+            api_response.set_result("Error calling project service: " + str(e))
             return api_response.json_response()
-        api_response.set_result("")
+        api_response.set_result(response.json())
+        api_response.set_code(response.status_code)
         return api_response.json_response()
 
     @router.delete(
@@ -72,14 +76,20 @@ class ResourceRequest:
         _logger.info("ResourceRequest get called")
 
         try:
-            # TODO call resource request API
-            pass
+            async with httpx.AsyncClient() as client:
+                url = ConfigClass.PROJECT_SERVICE + f"/v1/resource-requests/{request_id}"
+                response = await client.delete(url)
         except Exception as e:
             _logger.error("Error calling resource request API: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            api_response.set_result("Psql Error: " + str(e))
+            api_response.set_result("Error calling project service: " + str(e))
             return api_response.json_response()
-        api_response.set_result('success')
+        if response.status_code == 204:
+            api_response.set_result("success")
+            api_response.set_code(EAPIResponseCode.success.value)
+        else:
+            api_response.set_result(response.json())
+            api_response.set_code(response.status_code)
         return api_response.json_response()
 
 
@@ -100,42 +110,61 @@ class ResourceRequestComplete:
         _logger.info("ResourceRequestComplete put called")
 
         try:
-            # TODO call resource request API
-            resource_request = {}
-            pass
+            payload = {
+                "completed_at": str(datetime.utcnow())
+            }
+            async with httpx.AsyncClient() as client:
+                url = ConfigClass.PROJECT_SERVICE + f"/v1/resource-requests/{request_id}"
+                response = await client.patch(url, json=payload)
+                resource_request = response.json()
         except Exception as e:
             _logger.error("Error calling resource request API: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            api_response.set_result("Psql Error: " + str(e))
+            api_response.set_result("Error calling project service: " + str(e))
             return api_response.json_response()
 
         project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-        project = await project_client.get(id=resource_request.project_geid)
+        project = await project_client.get(id=resource_request["project_id"])
 
+        async with httpx.AsyncClient() as client:
+            user_id = resource_request["user_id"]
+            data = {
+                "user_id": user_id,
+                "exact": True,
+            }
+            user_response = await client.get(ConfigClass.AUTH_SERVICE + "admin/user", params=data)
+            if user_response.status_code != 200:
+                raise APIException(
+                    error_msg=f"Error getting user {user_id} from auth service: " + str(user_response.json()),
+                    status_code=user_response.status_code
+                )
+            user = user_response.json()["result"]
+
+        requested_for = resource_request["requested_for"]
         template_kwargs = {
             "current_user": self.current_identity["username"],
-            "request_for": resource_request.request_for,
-            "project_name": resource_request.project_name,
+            "request_for": requested_for,
+            "project_name": project.name,
             "project_code": project.code,
             "admin_email": ConfigClass.EMAIL_SUPPORT,
         }
         try:
+            user_email = user["email"]
             email_sender = SrvEmail()
-            email_sender.send(
-                f"Access granted to {resource_request.request_for}",
-                [resource_request.email],
+            await email_sender.async_send(
+                f"Access granted to {requested_for}",
+                [user_email],
                 msg_type='html',
                 template="resource_request/approved.html",
                 template_kwargs=template_kwargs,
             )
-            _logger.info(f"Email sent to {resource_request.email}")
+            _logger.info(f"Email sent to {user_email}")
         except Exception as e:
             _logger.error("Error sending email: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result("Error sending email: " + str(e))
             return api_response.json_response()
-
-        api_response.set_result("")
+        api_response.set_result(response.json())
         return api_response.json_response()
 
 
@@ -156,10 +185,9 @@ class ResourceRequestsQuery:
         data = await request.json()
 
         page = int(data.get('page', 0))
-        # use 0 start for consitency with other pagination systems
-        page = page + 1
+        page = page
         page_size = int(data.get('page_size', 25))
-        order_by = data.get('order_by', "request_date")
+        order_by = data.get('order_by', "requested_at")
         order_type = data.get('order_type', "asc")
         filters = data.get('filters', {})
 
@@ -167,18 +195,34 @@ class ResourceRequestsQuery:
             if self.current_identity["role"] != "admin":
                 filters["username"] = self.current_identity["username"]
 
-            # TODO add resource request call
+            payload = {
+                "page": page,
+                "page_size": page_size,
+                "sort_by": order_by,
+                "sort_order": order_type,
+            }
+            async with httpx.AsyncClient() as client:
+                url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/"
+                response = await client.get(url, params=payload)
+
         except Exception as e:
-            _logger.error("Psql error: " + str(e))
+            _logger.error("Error calling project service: " + str(e))
             api_response.set_code(EAPIResponseCode.internal_error)
-            api_response.set_result("Psql error: " + str(e))
+            api_response.set_result("Error calling project service: " + str(e))
             return api_response.json_response()
 
-        total = 0
-        api_response.set_page(page - 1)
+        results = response.json()["result"]
+        for result in results:
+            if result["completed_at"]:
+                result["is_completed"] = True
+            else:
+                result["is_completed"] = False
+
+        total = response.json()["total"]
+        api_response.set_page(page)
         api_response.set_num_of_pages(math.ceil(total / page_size))
         api_response.set_total(total)
-        api_response.set_result([])
+        api_response.set_result(results)
         return api_response.json_response()
 
 
@@ -191,92 +235,52 @@ class ResourceRequests:
         summary="Create a new resource request, send email notification",
         dependencies=[Depends(PermissionsCheck("resource_request", "*", "create"))]
     )
-    async def post(self, request: Request):
+    async def post(self, data: CreateResourceRequest):
 
         """
             Create a new resource request, send email notification
         """
         _logger.info("ResourceRequests post called")
         api_response = APIResponse()
-        data = await request.json()
-        try:
-            # validate payload
-            is_valid, res, code = validate_payload(data)
-            if not is_valid:
-                return res, code
-            else:
-                model_data = res
 
-            #duplicate_check(data)
+        # get user node
+        project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
+        project = await project_client.get(id=data.project_id)
 
-            # get user node
-            #user_node = get_user_node(data["user_id"])
+        user_role = None
+        for role in self.current_identity["realm_roles"]:
+            if role.split("-")[0] == project.code:
+                user_role = role.split("-")[-1]
+                break
 
-            project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
-            project = await project_client.get(id=data["project_geid"])
+        if not user_role:
+            raise APIException(error_msg="Couldn't get user role", status_code=EAPIResponseCode.forbidden.value)
 
-            model_data["username"] = self.current_identity["username"]
-            model_data["email"] = self.current_identity["email"]
-            model_data["project_name"] = project.name
+        payload = {
+            "project_id": data.project_id,
+            "user_id": self.current_identity["user_id"],
+            "email": self.current_identity["email"],
+            "username": self.current_identity["username"],
+            "requested_for": data.request_for,
+        }
+        async with httpx.AsyncClient() as client:
+            url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/"
+            response = await client.post(url, json=payload)
+            if response.status_code != 200:
+                raise APIException(error_msg=response.json(), status_code=response.status_code)
+        resource_request = response.json()
 
-            user_role = None
-            for role in get_realm_roles(self.current_identity["username"]):
-                if role["name"].split("-")[0] == project.code:
-                    user_role = role["name"].split("-")[-1]
-                    break
-
-            # TODO call resource request API
-            resource_request = {}
-
-            # send_email
-            is_email_sent, email_res, code = send_email(resource_request, project, user_role)
-            if not is_email_sent:
-                return email_res, code
-            api_response.set_result(resource_request.to_dict())
-            return api_response.json_response()
-
-        except Exception as e:
-            raise e
-            _logger.error("Psql error: " + str(e))
-            api_response.set_code(EAPIResponseCode.internal_error)
-            api_response.set_result("Psql error: " + str(e))
-            return api_response.json_response()
+        username = self.current_identity["username"]
+        await send_email(resource_request, project, user_role, username)
+        api_response.set_result(resource_request)
+        return api_response.json_response()
 
 
-def validate_payload(data):
-    api_response = APIResponse()
-    model_data = {}
-    required_fields = ["user_id", "project_geid", "request_for"]
-    for field in required_fields:
-        if field in data:
-            model_data[field] = data[field]
-            continue
-        api_response.set_code(EAPIResponseCode.bad_request)
-        api_response.set_result(f"Missing required field {field}")
-        return False, api_response.to_dict, api_response.code
-    if not data["request_for"] in ConfigClass.RESOURCES:
-        api_response.set_code(EAPIResponseCode.bad_request)
-        api_response.set_result("Invalid request_for field")
-        return False, api_response.to_dict, api_response.code
-    return True, model_data, 200
-
-
-def get_realm_roles(username: str) -> list:
-    payload = {
-        "username": username,
-    }
-    response = requests.get(ConfigClass.AUTH_SERVICE + "admin/users/realm-roles", params=payload)
-    if not response.json():
-        raise APIException(status_code=EAPIResponseCode.not_found.value, error_msg="User not found in keycloak")
-    return response.json()["result"]
-
-
-def send_email(resource_request, project, user_role):
-    api_response = APIResponse()
+async def send_email(resource_request, project, user_role, username):
     template_kwargs = {
-        "username": resource_request.username,
-        "request_for": resource_request.request_for,
-        "project_name": resource_request.project_name,
+        "username": username,
+        "request_for": resource_request["requested_for"],
+        "project_name": project.name,
         "project_code": project.code,
         "admin_email": ConfigClass.EMAIL_SUPPORT,
         "portal_url": ConfigClass.SITE_DOMAIN,
@@ -284,17 +288,17 @@ def send_email(resource_request, project, user_role):
     }
     try:
         query = {"username": ConfigClass.RESOURCE_REQUEST_ADMIN}
-        response = requests.get(ConfigClass.AUTH_SERVICE + "admin/user", params=query)
+        async with httpx.AsyncClient() as client:
+            response = await client.get(ConfigClass.AUTH_SERVICE + "admin/user", params=query)
         admin_email = response.json()["result"]["email"]
     except Exception as e:
-        _logger.error("Error getting admin email: " + str(e))
-        api_response.set_code(EAPIResponseCode.internal_error)
-        api_response.set_result("Error getting admin email: " + str(e))
-        return False, api_response.to_dict, api_response.code
+        error_msg = "Error getting admin email: " + str(e)
+        _logger.error(error_msg)
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)
 
     try:
         email_sender = SrvEmail()
-        email_sender.send(
+        await email_sender.async_send(
             "Resource Request from " + template_kwargs["username"],
             [admin_email],
             msg_type='html',
@@ -302,9 +306,7 @@ def send_email(resource_request, project, user_role):
             template_kwargs=template_kwargs,
         )
         _logger.info(f"Email sent to {admin_email}")
-        return True, None, 200
     except Exception as e:
-        _logger.error("Error sending email: " + str(e))
-        api_response.set_code(EAPIResponseCode.internal_error)
-        api_response.set_result("Error sending email: " + str(e))
-        return False, api_response.to_dict, api_response.code
+        error_msg = "Error sending email: " + str(e)
+        _logger.error(error_msg)
+        raise APIException(error_msg=error_msg, status_code=EAPIResponseCode.internal_error.value)

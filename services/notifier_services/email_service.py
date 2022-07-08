@@ -15,6 +15,7 @@
 from models.service_meta_class import MetaService
 from config import ConfigClass
 import requests
+import httpx
 import json
 
 
@@ -42,3 +43,31 @@ class SrvEmail(metaclass=MetaService):
             json=payload
         )
         return json.loads(res.text)
+
+    async def async_send(
+        self,
+        subject,
+        receiver: list = [],
+        content=None,
+        msg_type="plain",
+        attachments=[],
+        sender=ConfigClass.EMAIL_SUPPORT,
+        template=None,
+        template_kwargs={}
+    ):
+        url = ConfigClass.EMAIL_SERVICE + "/"
+        payload = {
+            "subject": subject,
+            "sender": sender,
+            "receiver": receiver,
+            "msg_type": msg_type,
+            "attachments": attachments,
+        }
+        if content:
+            payload["message"] = content
+        if template:
+            payload["template"] = template
+            payload["template_kwargs"] = template_kwargs
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url, json=payload)
+        return response.json()
