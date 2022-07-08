@@ -18,7 +18,6 @@ import httpx
 from datetime import datetime
 from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
@@ -188,7 +187,7 @@ class ResourceRequestsQuery:
         page = int(data.get('page', 0))
         page = page
         page_size = int(data.get('page_size', 25))
-        order_by = data.get('order_by', "request_date")
+        order_by = data.get('order_by', "requested_at")
         order_type = data.get('order_type', "asc")
         filters = data.get('filters', {})
 
@@ -199,8 +198,8 @@ class ResourceRequestsQuery:
             payload = {
                 "page": page,
                 "page_size": page_size,
-                "order_by": order_by,
-                "order_type": order_type,
+                "sort_by": order_by,
+                "sort_order": order_type,
             }
             async with httpx.AsyncClient() as client:
                 url = ConfigClass.PROJECT_SERVICE + "/v1/resource-requests/"
@@ -259,7 +258,9 @@ class ResourceRequests:
 
         payload = {
             "project_id": data.project_id,
-            "requested_by_user_id": self.current_identity["user_id"],
+            "user_id": self.current_identity["user_id"],
+            "email": self.current_identity["email"],
+            "username": self.current_identity["username"],
             "requested_for": data.request_for,
         }
         async with httpx.AsyncClient() as client:

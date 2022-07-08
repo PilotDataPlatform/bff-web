@@ -55,7 +55,7 @@ class SrvEmail(metaclass=MetaService):
         template=None,
         template_kwargs={}
     ):
-        url = ConfigClass.EMAIL_SERVICE
+        url = ConfigClass.EMAIL_SERVICE + "/"
         payload = {
             "subject": subject,
             "sender": sender,

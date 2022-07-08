@@ -117,7 +117,7 @@ async def test_put_request_complete_200(
 
     httpx_mock.add_response(
         method="POST",
-        url=ConfigClass.EMAIL_SERVICE,
+        url=ConfigClass.EMAIL_SERVICE + "/",
         json={'result': 'success'},
         status_code=200
     )
@@ -172,7 +172,7 @@ async def test_post_request_query_200(
         ]
     }
     url = ConfigClass.PROJECT_SERVICE + (
-        "/v1/resource-requests/?page=0&page_size=25&order_by=request_date&order_type=asc"
+        "/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc"
     )
     httpx_mock.add_response(
         method="GET",
@@ -206,7 +206,7 @@ async def test_post_request_query_contrib_200(
         ]
     }
     url = ConfigClass.PROJECT_SERVICE + (
-        "/v1/resource-requests/""?page=0&page_size=25&order_by=request_date&order_type=asc"
+        "/v1/resource-requests/""?page=0&page_size=25&sort_by=requested_at&sort_order=asc"
     )
     httpx_mock.add_response(
         method="GET",
@@ -251,7 +251,7 @@ async def test_post_request_create_200(
 
     httpx_mock.add_response(
         method="POST",
-        url=ConfigClass.EMAIL_SERVICE,
+        url=ConfigClass.EMAIL_SERVICE + "/",
         json={'result': 'success'},
         status_code=200
     )
