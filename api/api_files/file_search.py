@@ -126,7 +126,7 @@ class FileSearch:
             params['container_type'] = 'project'
             params['container_code'] = project_code
 
-            url = ConfigClass.SEARCH_SERVICE + '/v1/metadata-items/'
+            url = ConfigClass.SEARCH_SERVICE + 'metadata-items/'
 
             async with httpx.AsyncClient() as client:
                 _logger.info(f'Calling search service {url} with query params: {params}')

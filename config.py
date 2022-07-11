@@ -19,41 +19,41 @@ from typing import Any
 from typing import Dict
 from typing import List
 
-from pydantic import BaseSettings
-from pydantic import Extra
 from common import VaultClient
 from dotenv import load_dotenv
+from pydantic import BaseSettings
+from pydantic import Extra
 
 load_dotenv()
-SRV_NAMESPACE = os.environ.get("APP_NAME", "core")
-CONFIG_CENTER_ENABLED = os.environ.get("CONFIG_CENTER_ENABLED", "false")
+SRV_NAMESPACE = os.environ.get('APP_NAME', 'core')
+CONFIG_CENTER_ENABLED = os.environ.get('CONFIG_CENTER_ENABLED', 'false')
 
 
 def load_vault_settings(settings: BaseSettings) -> Dict[str, Any]:
-    if CONFIG_CENTER_ENABLED == "false":
+    if CONFIG_CENTER_ENABLED == 'false':
         return {}
     else:
         return vault_factory()
 
 
 def vault_factory() -> dict:
-    vc = VaultClient(os.getenv("VAULT_URL"), os.getenv("VAULT_CRT"), os.getenv("VAULT_TOKEN"))
+    vc = VaultClient(os.getenv('VAULT_URL'), os.getenv('VAULT_CRT'), os.getenv('VAULT_TOKEN'))
     return vc.get_from_vault(SRV_NAMESPACE)
 
 
 class Settings(BaseSettings):
     """Store service configuration settings."""
 
-    env: str = ""
+    env: str = ''
     APP_NAME: str = 'core'
-    version: str = "0.1.0"
+    version: str = '0.1.0'
     port: int = 5063
-    host: str = "127.0.0.1"
+    host: str = '127.0.0.1'
 
     PROJECT_NAME: str
 
-    PROJECT_CODE_REGEX: str = "^[a-z][a-z0-9]{0,31}$"
-    PROJECT_NAME_REGEX: str = "^.{1,100}$"
+    PROJECT_CODE_REGEX: str = '^[a-z][a-z0-9]{0,31}$'
+    PROJECT_NAME_REGEX: str = '^.{1,100}$'
 
     CORE_ZONE_LABEL: str
     GREENROOM_ZONE_LABEL: str
@@ -117,7 +117,7 @@ class Settings(BaseSettings):
     MINIO_HTTPS: bool = False
     MINIO_BUCKET_ENCRYPTION: bool = True
 
-    RESOURCES: List[str] = ["SuperSet", "Guacamole"]
+    RESOURCES: List[str] = ['SuperSet', 'Guacamole']
 
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
@@ -125,22 +125,23 @@ class Settings(BaseSettings):
 
     def modify_values(self, settings):
         ENTITYINFO_HOST = settings.ENTITYINFO_SERVICE
-        settings.ENTITYINFO_SERVICE = ENTITYINFO_HOST + "/v1/"
-        settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + "/v2/"
-        settings.METADATA_SERVICE = settings.METADATA_SERVICE + "/v1/"
-        settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + "/v1/"
+        settings.ENTITYINFO_SERVICE = ENTITYINFO_HOST + '/v1/'
+        settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + '/v2/'
+        settings.METADATA_SERVICE = settings.METADATA_SERVICE + '/v1/'
+        settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + '/v1/'
         DATA_UTILITY_HOST = settings.DATA_OPS_UTIL
-        settings.DATA_UTILITY_SERVICE = DATA_UTILITY_HOST + "/v1/"
-        settings.DATA_UTILITY_SERVICE_v2 = DATA_UTILITY_HOST + "/v2/"
-        settings.AUTH_SERVICE = settings.AUTH_SERVICE + "/v1/"
-        settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + "/v1/"
+        settings.DATA_UTILITY_SERVICE = DATA_UTILITY_HOST + '/v1/'
+        settings.DATA_UTILITY_SERVICE_v2 = DATA_UTILITY_HOST + '/v2/'
+        settings.AUTH_SERVICE = settings.AUTH_SERVICE + '/v1/'
+        settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + '/v1/'
         settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE
-        settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + "/v1/email"
-        settings.DATASET_SERVICE = settings.DATASET_SERVICE + "/v1/"
-        settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + "/v2/"
-        settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + "/v2/"
-        settings.KG_SERVICE = settings.KG_SERVICE + "/v1/"
-        settings.REDIS_URL = f"redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}"
+        settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + '/v1/email'
+        settings.DATASET_SERVICE = settings.DATASET_SERVICE + '/v1/'
+        settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + '/v2/'
+        settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + '/v2/'
+        settings.KG_SERVICE = settings.KG_SERVICE + '/v1/'
+        settings.SEARCH_SERVICE = settings.SEARCH_SERVICE + '/v1/'
+        settings.REDIS_URL = f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}'
         settings.ZONE_LABEL_MAPPING = {
             0: settings.GREENROOM_ZONE_LABEL,
             1: settings.CORE_ZONE_LABEL,

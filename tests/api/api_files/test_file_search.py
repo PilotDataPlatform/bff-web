@@ -55,7 +55,7 @@ async def test_get_files_search_replaces_zone_numbers_with_string_values(
     )
     httpx_mock.add_response(
         method='GET',
-        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}/v1/metadata-items/.*?container_code={project_code}.*$'),
+        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}metadata-items/.*?container_code={project_code}.*$'),
         json={
             'total_per_zone': {0: 10, 1: 20, 2: 30},
             'result': [mock_metadata_item(0), mock_metadata_item(1), mock_metadata_item(2)],
