@@ -122,7 +122,7 @@ class PendingUserRestful:
         if self.current_identity['role'] != 'admin':
             project_client = ProjectClient(ConfigClass.PROJECT_SERVICE, ConfigClass.REDIS_URL)
             project = await project_client.get(id=project_id)
-            if not has_permission(project.code, 'invite', '*', 'view'):
+            if not has_permission(project.code, 'invite', '*', 'view', self.current_identity):
                 my_res.set_code(EAPIResponseCode.forbidden)
                 my_res.set_error_msg('Permission denied')
                 return my_res.json_response()
