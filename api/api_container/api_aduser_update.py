@@ -140,7 +140,7 @@ class ADUserUpdate:
                 for project_code in project_code_list:
                     folders.append({
                         "name": folder_name,
-                        "zone": 0 if zone == "greenroom" else 1,
+                        "zone": 0 if zone.lower() == "greenroom" else 1,
                         "type": "name_folder",
                         "owner": folder_name,
                         "container_code": project_code,
@@ -149,10 +149,19 @@ class ADUserUpdate:
                         "location_uri": "",
                         "version": "",
                     })
-            response = requests.post(ConfigClass.METADATA_SERVICE + "items/batch/", json=folders)
+            payload = {
+                "items": folders,
+                "skip_duplicates": True
+            }
+            response = requests.post(ConfigClass.METADATA_SERVICE + "items/batch/", json=payload)
             if response.status_code == 200:
                 logger.info(f"In namespace: {zone}, folders bulk created successfully for user: {folder_name} \
                         under {project_code_list}")
+            else:
+                error_msg = f"Error calling metadata service for name folder creation: {response.json()}"
+                logger.info(error_msg)
+                raise Exception(error_msg)
+
         except Exception as error:
             logger.error(
                 f"Error while trying to create namespace folder for user : {folder_name} under {project_code_list} : \
