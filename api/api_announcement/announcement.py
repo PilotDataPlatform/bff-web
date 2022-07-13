@@ -43,7 +43,7 @@ class AnnouncementRestful:
             api_response.set_code(EAPIResponseCode.bad_request)
             return api_response.json_response()
 
-        response = requests.get(ConfigClass.NOTIFY_SERVICE + "/v1/announcements", params=data)
+        response = requests.get(ConfigClass.NOTIFY_SERVICE + "announcements", params=data)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()
@@ -71,7 +71,7 @@ class AnnouncementRestful:
         await project_client.get(code=data["project_code"])
 
         data["publisher"] = self.current_identity["username"]
-        response = requests.post(ConfigClass.NOTIFY_SERVICE + "/v1/announcements", json=data)
+        response = requests.post(ConfigClass.NOTIFY_SERVICE + "announcements", json=data)
         if response.status_code != 200:
             api_response.set_error_msg(response.json()["error_msg"])
             response_dict = api_response.to_dict

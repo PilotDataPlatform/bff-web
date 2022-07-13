@@ -37,6 +37,7 @@ opentelemetry-instrumentation-httpx = "^0.30b1"
 uvicorn = "0.17.6"
 httpx = "0.23.0"
 pilot-platform-common = "0.0.32"
+fastapi-health = "0.4.0"
 
 [tool.poetry.dev-dependencies]
 pytest = "6.2.5"
