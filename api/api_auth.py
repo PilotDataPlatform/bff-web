@@ -60,7 +60,7 @@ class UserStatus:
         try:
             token = request.headers.get('Authorization')
             token = token.split()[-1]
-            decoded = pyjwt.decode(token, verify=False)
+            decoded = pyjwt.decode(token, key=ConfigClass.JWT_SECRET_KEY)
             email = decoded["email"]
         except Exception as e:
             return JSONResponse(content={'result': "JWT user status error " + str(e)}, status_code=500)
