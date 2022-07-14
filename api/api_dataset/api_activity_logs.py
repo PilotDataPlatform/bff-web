@@ -37,17 +37,17 @@ class ActivityLogs:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/activity-logs/{dataset_code}',
+        '/activity-logs/{dataset_id}',
         summary='Fetch activity logs of a dataset from the search service',
     )
-    async def get(self, dataset_code: str, request: Request):
+    async def get(self, dataset_id: str, request: Request):
         """Fetch activity logs of a dataset."""
         _res = APIResponse()
-        _logger.info(f'Call API for fetching logs for dataset: {dataset_code}')
+        _logger.info(f'Call API for fetching logs for dataset: {dataset_id}')
 
         url = ConfigClass.SEARCH_SERVICE + 'dataset-activity-logs/'
         try:
-            dataset = await get_dataset_by_code(dataset_code=dataset_code)
+            dataset = await get_dataset_by_id(dataset_id=dataset_id)
             if not dataset:
                 _res.set_code(EAPIResponseCode.bad_request)
                 _res.set_result('Dataset does not exist')
