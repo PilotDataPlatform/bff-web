@@ -12,6 +12,7 @@
 #
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 import re
 
 import pytest
@@ -47,7 +48,8 @@ async def test_get_activity_logs_admin_200(test_async_client, httpx_mock, mocker
     )
     httpx_mock.add_response(
         method='GET',
-        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}dataset-activity-logs/.*?container_code={dataset_code}.*$'),
+        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}/v1/dataset-activity-logs/.*?container_code={dataset_code}.*$'),
+        json={},
     )
     headers = {'Authorization': ''}
 
@@ -66,7 +68,8 @@ async def test_get_activity_logs_contrib_200(test_async_client, httpx_mock, mock
     )
     httpx_mock.add_response(
         method='GET',
-        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}dataset-activity-logs/.*?container_code={dataset_code}.*$'),
+        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}/v1/dataset-activity-logs/.*?container_code={dataset_code}.*$'),
+        json={},
     )
     headers = {'Authorization': ''}
 

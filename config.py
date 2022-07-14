@@ -140,7 +140,6 @@ class Settings(BaseSettings):
         settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + '/v2/'
         settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + '/v2/'
         settings.KG_SERVICE = settings.KG_SERVICE + '/v1/'
-        settings.SEARCH_SERVICE = settings.SEARCH_SERVICE + '/v1/'
         settings.REDIS_URL = f'redis://:{settings.REDIS_PASSWORD}@{settings.REDIS_HOST}:{settings.REDIS_PORT}'
         settings.ZONE_LABEL_MAPPING = {
             0: settings.GREENROOM_ZONE_LABEL,
