@@ -1,3 +1,18 @@
+# Copyright (C) 2022 Indoc Research
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU Affero General Public License as
+# published by the Free Software Foundation, either version 3 of the
+# License, or any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU Affero General Public License for more details.
+#
+# You should have received a copy of the GNU Affero General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
 from fastapi import FastAPI
 
 from api import api_workbench
@@ -13,7 +28,7 @@ from api import api_dataset_rest_proxy
 from api.api_dataset import api_folder, api_schema, api_schema_template, api_validate, api_versions, api_activity_logs
 from api import api_download
 from api import api_email
-from api.api_files import file_ops, meta, vfolder_ops, file_search
+from api.api_files import file_ops, meta, vfolder_ops
 from api.api_kg import api_kg_resource
 from api.api_notification import notification, unsubscribe
 from api import api_preview
@@ -25,6 +40,7 @@ from api.api_user_event import event
 from api import api_users
 from api.api_resource_request import resource_request
 from api.api_files import file_stats
+from api import api_project_files
 
 
 def api_registry(app: FastAPI):
@@ -66,4 +82,4 @@ def api_registry(app: FastAPI):
     app.include_router(api_workbench.router, prefix="/v1")
     app.include_router(resource_request.router, prefix="/v1")
     app.include_router(file_stats.router, prefix="/v1")
-    app.include_router(file_search.router, prefix="/v1")
+    app.include_router(api_project_files.router, prefix="/v1")
