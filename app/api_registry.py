@@ -82,4 +82,4 @@ def api_registry(app: FastAPI):
     app.include_router(api_workbench.router, prefix="/v1")
     app.include_router(resource_request.router, prefix="/v1")
     app.include_router(file_stats.router, prefix="/v1")
-    app.include_router(api_project_files.router, prefix='/v1')
+    app.include_router(api_project_files.router, prefix="/v1")
