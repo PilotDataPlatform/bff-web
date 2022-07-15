@@ -192,6 +192,40 @@ async def test_post_request_query_200(
 
 
 @pytest.mark.asyncio
+async def test_post_request_query_422(
+    test_async_client,
+    httpx_mock,
+    jwt_token_admin,
+    has_permission_true
+):
+
+    result = {
+        "num_of_pages": 1,
+        "page": 0,
+        "total": 1,
+        "result": [
+            RESOURCE_REQUEST
+        ]
+    }
+    url = ConfigClass.PROJECT_SERVICE + (
+        "/v1/resource-requests/?page=0&page_size=25&sort_by=requested_at&sort_order=asc"
+    )
+    httpx_mock.add_response(
+        method="GET",
+        url=url,
+        json=result,
+        status_code=422
+    )
+
+    payload = {
+        "page": 0,
+        "page_size": 25,
+    }
+    response = await test_async_client.post("/v1/resource-requests/query", json=payload)
+    assert response.status_code == 422
+
+
+@pytest.mark.asyncio
 async def test_post_request_query_contrib_200(
     test_async_client,
     httpx_mock,
