@@ -18,6 +18,7 @@ import httpx
 from datetime import datetime
 from common import LoggerFactory, ProjectClient
 from fastapi import APIRouter, Depends, Request
+from fastapi.responses import JSONResponse
 from fastapi_utils import cbv
 
 from app.auth import jwt_required
@@ -210,6 +211,9 @@ class ResourceRequestsQuery:
             api_response.set_code(EAPIResponseCode.internal_error)
             api_response.set_result("Error calling project service: " + str(e))
             return api_response.json_response()
+
+        if response.status_code != 200:
+            return JSONResponse(content=response.json(), status_code=response.status_code)
 
         results = response.json()["result"]
         for result in results:
