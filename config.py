@@ -59,12 +59,10 @@ class Settings(BaseSettings):
     AD_PROJECT_GROUP_PREFIX: str
 
     # Services
-    ENTITYINFO_SERVICE: str
     DATAOPS_SERVICE: str
     AUTH_SERVICE: str
     PROVENANCE_SERVICE: str
     NOTIFY_SERVICE: str
-    EMAIL_SERVICE: str
     DATASET_SERVICE: str
     DOWNLOAD_SERVICE_CORE: str
     DOWNLOAD_SERVICE_GR: str
@@ -118,9 +116,6 @@ class Settings(BaseSettings):
     OPEN_TELEMETRY_PORT: int = 6831
 
     def modify_values(self, settings):
-        ENTITYINFO_HOST = settings.ENTITYINFO_SERVICE
-        settings.ENTITYINFO_SERVICE = ENTITYINFO_HOST + '/v1/'
-        settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + '/v2/'
         settings.METADATA_SERVICE = settings.METADATA_SERVICE + '/v1/'
         settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + '/v1/'
         DATAOPS_HOST = settings.DATAOPS_SERVICE

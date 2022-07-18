@@ -119,7 +119,7 @@ async def test_put_request_complete_200(
 
     httpx_mock.add_response(
         method="POST",
-        url=ConfigClass.EMAIL_SERVICE + "/",
+        url=ConfigClass.NOTIFY_SERVICE + "email/",
         json={'result': 'success'},
         status_code=200
     )
@@ -252,7 +252,7 @@ async def test_post_request_create_200(
 
     httpx_mock.add_response(
         method="POST",
-        url=ConfigClass.EMAIL_SERVICE + "/",
+        url=ConfigClass.NOTIFY_SERVICE + "email/",
         json={'result': 'success'},
         status_code=200
     )
