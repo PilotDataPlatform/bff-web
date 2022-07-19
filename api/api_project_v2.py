@@ -13,8 +13,6 @@
 # You should have received a copy of the GNU Affero General Public License
 # along with this program.  If not, see <http://www.gnu.org/licenses/>.
 import random
-import re
-from uuid import uuid4
 
 import ldap
 import ldap.modlist as modlist
@@ -116,26 +114,6 @@ async def validate_post_data(post_data: dict):
             status_code=EAPIResponseCode.bad_request.value
         )
 
-    project_code_pattern = re.compile(ConfigClass.PROJECT_CODE_REGEX)
-    is_match = re.search(project_code_pattern, code)
-
-    if not is_match:
-        _logger.error('Project code does not match the pattern.')
-        raise APIException(
-            status_code=EAPIResponseCode.bad_request.value,
-            error_msg="Project code does not match the pattern."
-        )
-
-    project_name_pattern = re.compile(ConfigClass.PROJECT_NAME_REGEX)
-    is_match = re.search(project_name_pattern, name)
-
-    if not is_match:
-        _logger.error('Project name does not match the pattern.')
-        raise APIException(
-            status_code=EAPIResponseCode.bad_request.value,
-            error_msg="Project name does not match the pattern."
-        )
-
     if post_data.get("icon"):
         # check if icon is bigger then limit
         if len(post_data.get("icon")) > ConfigClass.ICON_SIZE_LIMIT:
@@ -148,7 +126,7 @@ async def validate_post_data(post_data: dict):
 async def create_minio_bucket(project_code: str) -> None:
     try:
         boto_client = await get_boto3_admin_client(
-            ConfigClass.MINIO_ENDPOINT,
+            ConfigClass.MINIO_HOST,
             ConfigClass.MINIO_ACCESS_KEY,
             ConfigClass.MINIO_SECRET_KEY
         )
@@ -165,7 +143,7 @@ async def create_minio_bucket(project_code: str) -> None:
                 _logger.warn('Bucket encryption is not enabled, not encrypting %s' % bucket_name)
 
         mc = await get_minio_policy_client(
-            ConfigClass.MINIO_ENDPOINT,
+            ConfigClass.MINIO_HOST,
             ConfigClass.MINIO_ACCESS_KEY,
             ConfigClass.MINIO_SECRET_KEY,
             https=ConfigClass.MINIO_HTTPS

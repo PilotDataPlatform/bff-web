@@ -216,6 +216,22 @@ def test_create_project_bad_code_400(
         status_code=200
     )
 
+    # duplicate check
+    httpx_mock.add_response(
+        method='GET',
+        url=ConfigClass.PROJECT_SERVICE + "/v1/projects/" + payload.get("code"),
+        json={},
+        status_code=404
+    )
+
+    # create project
+    httpx_mock.add_response(
+        method='POST',
+        url=ConfigClass.PROJECT_SERVICE + "/v1/projects/",
+        json={},
+        status_code=400
+    )
+
     headers = {"Authorization": ""}
     response = test_client.post("/v1/projects", json=payload, headers=headers)
     assert response.status_code == 400
@@ -229,6 +245,7 @@ def test_create_project_bad_name_400(
     has_permission_true
 ):
     payload = PROJECT_DATA.copy()
+    payload["code"] = "test2"
     mocker.patch('api.api_project_v2.create_minio_bucket', return_value=None)
     mocker.patch('api.api_project_v2.ldap_create_user_group', return_value=None)
     payload["name"] = "".join(str(i) for i in range(1000))
@@ -252,6 +269,22 @@ def test_create_project_bad_name_400(
         ConfigClass.AUTH_SERVICE + "admin/roles/users",
         json={},
         status_code=200
+    )
+
+    # duplicate check
+    httpx_mock.add_response(
+        method='GET',
+        url=ConfigClass.PROJECT_SERVICE + "/v1/projects/" + payload.get("code"),
+        json={},
+        status_code=404
+    )
+
+    # create project
+    httpx_mock.add_response(
+        method='POST',
+        url=ConfigClass.PROJECT_SERVICE + "/v1/projects/",
+        json={},
+        status_code=400
     )
 
     headers = {"Authorization": ""}

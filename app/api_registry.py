@@ -39,8 +39,9 @@ from api.api_tags import api_batch_tags_operation, api_tags_operation
 from api.api_user_event import event
 from api import api_users
 from api.api_resource_request import resource_request
-from api.api_files import file_stats
+from api.api_health import health
 from api import api_project_files
+
 
 
 def api_registry(app: FastAPI):
@@ -81,5 +82,6 @@ def api_registry(app: FastAPI):
     app.include_router(api_users.router, prefix="/v1")
     app.include_router(api_workbench.router, prefix="/v1")
     app.include_router(resource_request.router, prefix="/v1")
-    app.include_router(file_stats.router, prefix="/v1")
+    app.include_router(health.router, prefix="/v1")
     app.include_router(api_project_files.router, prefix="/v1")
+

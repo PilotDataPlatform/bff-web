@@ -25,7 +25,7 @@ class SrvEmail(metaclass=MetaService):
         '''
         (str, str, str, str, str) -> dict   #**TypeContract**
         '''
-        url = ConfigClass.EMAIL_SERVICE
+        url = ConfigClass.NOTIFY_SERVICE + "email"
         payload = {
             "subject": subject,
             "sender": sender,
@@ -55,7 +55,7 @@ class SrvEmail(metaclass=MetaService):
         template=None,
         template_kwargs={}
     ):
-        url = ConfigClass.EMAIL_SERVICE + "/"
+        url = ConfigClass.NOTIFY_SERVICE + "email/"
         payload = {
             "subject": subject,
             "sender": sender,

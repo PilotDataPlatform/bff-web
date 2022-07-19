@@ -35,7 +35,7 @@ class UnsubscribeRestful:
     async def post(self, request: Request):
         api_response = APIResponse()
         body = await request.json()
-        response = requests.post(ConfigClass.NOTIFY_SERVICE + '/v1/unsubscribe', json=body)
+        response = requests.post(ConfigClass.NOTIFY_SERVICE + 'unsubscribe', json=body)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()

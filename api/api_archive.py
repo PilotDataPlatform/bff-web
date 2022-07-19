@@ -66,7 +66,7 @@ class Archive:
             return api_response.json_response()
 
         try:
-            response = requests.get(ConfigClass.DATA_UTILITY_SERVICE + "archive", params={"file_id": file_id})
+            response = requests.get(ConfigClass.DATAOPS_SERVICE + "archive", params={"file_id": file_id})
         except Exception as e:
             _logger.info(f"Error calling dataops gr: {str(e)}")
             return JSONResponse(content=response.json(), status_code=response.status_code)

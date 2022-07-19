@@ -47,7 +47,7 @@ class FileActionTasks:
         request_params = {**data}
         # here update the project_code to code
         request_params.update({"code": request_params.get("project_code")})
-        url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
+        url = ConfigClass.DATAOPS_SERVICE + "tasks"
         response = requests.get(url, params=request_params)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
@@ -58,7 +58,7 @@ class FileActionTasks:
     )
     async def delete(self, request: Request):
         request_body = await request.json()
-        url = ConfigClass.DATA_UTILITY_SERVICE + "tasks"
+        url = ConfigClass.DATAOPS_SERVICE+ "tasks"
         response = requests.delete(url, json=request_body)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
@@ -72,7 +72,7 @@ class FileActions:
         summary="invoke an async file operation job",
     )
     async def post(self, request: Request):
-        data_actions_utility_url = ConfigClass.DATA_UTILITY_SERVICE + "files/actions/"
+        data_actions_utility_url = ConfigClass.DATAOPS_SERVICE + "files/actions/"
         headers = request.headers
         request_body = await request.json()
         validate_request_params(request_body)

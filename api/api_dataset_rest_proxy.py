@@ -203,7 +203,7 @@ class DatsetTasks:
         dataset = get_dataset_by_id(dataset_id)
         new_params['code'] = dataset['code']
 
-        url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
+        url = ConfigClass.DATAOPS_SERVICE + 'tasks'
         response = requests.get(url, params=new_params)
         return JSONResponse(content=response.json(), status_code=response.status_code)
 
@@ -219,6 +219,6 @@ class DatsetTasks:
         dataset = get_dataset_by_id(dataset_id)
         request_body['code'] = dataset['code']
 
-        url = ConfigClass.DATA_UTILITY_SERVICE + 'tasks'
+        url = ConfigClass.DATAOPS_SERVICE + 'tasks'
         response = requests.delete(url, json=request_body)
         return JSONResponse(content=response.json(), status_code=response.status_code)

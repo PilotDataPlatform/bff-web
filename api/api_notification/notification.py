@@ -34,7 +34,7 @@ class NotificationRestful:
     async def get(self, request: Request):
         api_response = APIResponse()
         params = request.query_params
-        response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
+        response = requests.get(ConfigClass.NOTIFY_SERVICE + 'notification', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()
@@ -52,7 +52,7 @@ class NotificationRestful:
             api_response.set_code(EAPIResponseCode.forbidden)
             return api_response.json_response()
         body = await request.json()
-        response = requests.post(ConfigClass.NOTIFY_SERVICE + '/v1/notification', json=body)
+        response = requests.post(ConfigClass.NOTIFY_SERVICE + 'notification', json=body)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()
@@ -71,7 +71,7 @@ class NotificationRestful:
             return api_response.json_response()
         params = request.query_params
         body = await request.json()
-        response = requests.put(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params, json=body)
+        response = requests.put(ConfigClass.NOTIFY_SERVICE + 'notification', params=params, json=body)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()
@@ -89,7 +89,7 @@ class NotificationRestful:
             api_response.set_code(EAPIResponseCode.forbidden)
             return api_response.json_response()
         params = request.query_params
-        response = requests.delete(ConfigClass.NOTIFY_SERVICE + '/v1/notification', params=params)
+        response = requests.delete(ConfigClass.NOTIFY_SERVICE + 'notification', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()
@@ -108,7 +108,7 @@ class NotificationsRestful:
     async def get(self, request: Request):
         api_response = APIResponse()
         params = request.query_params
-        response = requests.get(ConfigClass.NOTIFY_SERVICE + '/v1/notifications', params=params)
+        response = requests.get(ConfigClass.NOTIFY_SERVICE + 'notifications', params=params)
         if response.status_code != 200:
             api_response.set_error_msg(response.json())
             return api_response.json_response()

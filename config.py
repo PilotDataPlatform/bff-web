@@ -17,7 +17,6 @@ import os
 from functools import lru_cache
 from typing import Any
 from typing import Dict
-from typing import List
 
 from common import VaultClient
 from dotenv import load_dotenv
@@ -52,9 +51,6 @@ class Settings(BaseSettings):
 
     PROJECT_NAME: str
 
-    PROJECT_CODE_REGEX: str = '^[a-z][a-z0-9]{0,31}$'
-    PROJECT_NAME_REGEX: str = '^.{1,100}$'
-
     CORE_ZONE_LABEL: str
     GREENROOM_ZONE_LABEL: str
 
@@ -63,12 +59,10 @@ class Settings(BaseSettings):
     AD_PROJECT_GROUP_PREFIX: str
 
     # Services
-    ENTITYINFO_SERVICE: str
-    DATA_OPS_UTIL: str
+    DATAOPS_SERVICE: str
     AUTH_SERVICE: str
     PROVENANCE_SERVICE: str
     NOTIFY_SERVICE: str
-    EMAIL_SERVICE: str
     DATASET_SERVICE: str
     DOWNLOAD_SERVICE_CORE: str
     DOWNLOAD_SERVICE_GR: str
@@ -111,31 +105,25 @@ class Settings(BaseSettings):
     ICON_SIZE_LIMIT: int = 500 * 1000
 
     # MinIO
-    MINIO_ENDPOINT: str
+    MINIO_HOST: str
     MINIO_ACCESS_KEY: str
     MINIO_SECRET_KEY: str
     MINIO_HTTPS: bool = False
     MINIO_BUCKET_ENCRYPTION: bool = True
-
-    RESOURCES: List[str] = ['SuperSet', 'Guacamole']
 
     OPEN_TELEMETRY_ENABLED: bool = False
     OPEN_TELEMETRY_HOST: str = '127.0.0.1'
     OPEN_TELEMETRY_PORT: int = 6831
 
     def modify_values(self, settings):
-        ENTITYINFO_HOST = settings.ENTITYINFO_SERVICE
-        settings.ENTITYINFO_SERVICE = ENTITYINFO_HOST + '/v1/'
-        settings.ENTITYINFO_SERVICE_V2 = ENTITYINFO_HOST + '/v2/'
         settings.METADATA_SERVICE = settings.METADATA_SERVICE + '/v1/'
         settings.APPROVAL_SERVICE = settings.APPROVAL_SERVICE + '/v1/'
-        DATA_UTILITY_HOST = settings.DATA_OPS_UTIL
-        settings.DATA_UTILITY_SERVICE = DATA_UTILITY_HOST + '/v1/'
-        settings.DATA_UTILITY_SERVICE_v2 = DATA_UTILITY_HOST + '/v2/'
+        DATAOPS_HOST = settings.DATAOPS_SERVICE
+        settings.DATAOPS_SERVICE = DATAOPS_HOST + '/v1/'
+        settings.DATAOPS_SERVICE_v2 = DATAOPS_HOST + '/v2/'
         settings.AUTH_SERVICE = settings.AUTH_SERVICE + '/v1/'
         settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + '/v1/'
-        settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE
-        settings.EMAIL_SERVICE = settings.EMAIL_SERVICE + '/v1/email'
+        settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE + "/v1/"
         settings.DATASET_SERVICE = settings.DATASET_SERVICE + '/v1/'
         settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + '/v2/'
         settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + '/v2/'
