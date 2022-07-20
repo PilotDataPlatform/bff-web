@@ -29,7 +29,7 @@ class Event:
     current_identity: dict = Depends(jwt_required)
 
     @router.get(
-        '/user/event',
+        '/user/events',
         summary="List user events",
     )
     async def get(self, request: Request):
