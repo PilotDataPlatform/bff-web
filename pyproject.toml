@@ -36,7 +36,7 @@ opentelemetry-instrumentation-requests = "0.30b1"
 opentelemetry-instrumentation-httpx = "^0.30b1"
 uvicorn = "0.17.6"
 httpx = "0.23.0"
-pilot-platform-common = "0.0.32"
+pilot-platform-common = "0.0.41"
 
 [tool.poetry.dev-dependencies]
 pytest = "6.2.5"
