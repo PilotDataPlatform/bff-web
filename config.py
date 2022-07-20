@@ -56,6 +56,8 @@ class Settings(BaseSettings):
 
     KEYCLOAK_REALM: str
 
+    JWT_SECRET_KEY: str
+
     AD_PROJECT_GROUP_PREFIX: str
 
     # Services

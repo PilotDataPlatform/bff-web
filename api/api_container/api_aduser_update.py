@@ -41,7 +41,7 @@ class ADUserUpdate:
             # User is currently pending so jwt_required can't be used
             token = request.headers.get('Authorization')
             token = token.split()[-1]
-            decoded = pyjwt.decode(token, verify=False)
+            decoded = pyjwt.decode(token, key=ConfigClass.JWT_SECRET_KEY)
             current_username = decoded["preferred_username"]
         except Exception as e:
             return {'result': "JWT user status error " + str(e)}, 500
