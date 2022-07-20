@@ -55,22 +55,23 @@ class BatchTagsAPIV2:
             check_tag_permissions(entity, self.current_identity)
 
             if inherit:
-                child_entities = search_entities(
-                    entity["container_code"],
-                    entity["parent_path"] + "." + entity["name"],
-                    entity["zone"],
-                    recursive=True
-                )
-                for child_entity in child_entities:
-                    check_tag_permissions(child_entity, self.current_identity)
+                if entity["type"] == "folder":
+                    child_entities = search_entities(
+                        entity["container_code"],
+                        entity["parent_path"] + "." + entity["name"],
+                        entity["zone"],
+                        recursive=True
+                    )
+                    for child_entity in child_entities:
+                        check_tag_permissions(child_entity, self.current_identity)
 
-                    if only_files and child_entity["type"] == "folder":
-                        continue
+                        if only_files and child_entity["type"] == "folder":
+                            continue
 
-                    update_payload["items"].append({
-                        "tags": get_new_tags(operation, child_entity, tags),
-                    })
-                    params["ids"].append(child_entity["id"])
+                        update_payload["items"].append({
+                            "tags": get_new_tags(operation, child_entity, tags),
+                        })
+                        params["ids"].append(child_entity["id"])
             if only_files and entity["type"] == "folder":
                 continue
 
