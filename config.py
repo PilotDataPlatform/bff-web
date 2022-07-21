@@ -123,7 +123,7 @@ class Settings(BaseSettings):
         settings.DATAOPS_SERVICE_v2 = DATAOPS_HOST + '/v2/'
         settings.AUTH_SERVICE = settings.AUTH_SERVICE + '/v1/'
         settings.PROVENANCE_SERVICE = settings.PROVENANCE_SERVICE + '/v1/'
-        settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE + "/v1/"
+        settings.NOTIFY_SERVICE = settings.NOTIFY_SERVICE + '/v1/'
         settings.DATASET_SERVICE = settings.DATASET_SERVICE + '/v1/'
         settings.DOWNLOAD_SERVICE_CORE_V2 = settings.DOWNLOAD_SERVICE_CORE + '/v2/'
         settings.DOWNLOAD_SERVICE_GR_V2 = settings.DOWNLOAD_SERVICE_GR + '/v2/'
@@ -133,6 +133,7 @@ class Settings(BaseSettings):
             0: settings.GREENROOM_ZONE_LABEL,
             1: settings.CORE_ZONE_LABEL,
         }
+        settings.LABEL_ZONE_MAPPING = {value.lower(): key for key, value in settings.ZONE_LABEL_MAPPING.items()}
 
         return settings
 
