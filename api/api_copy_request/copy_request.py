@@ -102,7 +102,7 @@ class CopyRequestFiles:
     )
     async def get(self, project_code: str, request: Request):
         api_response = APIResponse()
-        data = request.query_params.copy()
+        data = request.query_params
 
         try:
             response = requests.get(ConfigClass.APPROVAL_SERVICE + f"request/copy/{project_code}/files", params=data)
