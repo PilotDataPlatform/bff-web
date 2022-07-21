@@ -46,18 +46,37 @@ def get_zone_label(zone: int) -> str:
         return str(zone)
 
 
-def replace_zone_labels(response: Dict[str, Any]) -> Dict[str, Any]:
-    """Replace zone numbers with string values."""
+def get_zone_int(zone: str) -> int:
+    """Get zone number for zone label."""
 
-    total_per_zone = response['total_per_zone']
+    return ConfigClass.LABEL_ZONE_MAPPING[zone.lower()]
+
+
+def _replace_zone_labels_in_total_per_zone(total_per_zone: Dict[str, int]) -> None:
+    """Perform inplace replacement of zone numbers with string values."""
+
     zones = list(total_per_zone.keys())
     for zone in zones:
         new_key = get_zone_label(int(zone))
         total_per_zone[new_key] = total_per_zone.pop(zone)
 
+
+def _replace_zone_labels_in_search_response(response: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace zone numbers with string values."""
+
+    _replace_zone_labels_in_total_per_zone(response['total_per_zone'])
+
     result = response['result']
     for item in result:
         item['zone'] = get_zone_label(item['zone'])
+
+    return response
+
+
+def _replace_zone_labels_in_statistics_response(response: Dict[str, Any]) -> Dict[str, Any]:
+    """Replace zone numbers with string values."""
+
+    _replace_zone_labels_in_total_per_zone(response['files']['total_per_zone'])
 
     return response
 
@@ -87,7 +106,7 @@ async def search(
         response.set_error_msg('Not implemented.')
         return response.json_response()
 
-        # TODO: Revise this in connection with search service
+        # TODO: Revise this in connection with search service - https://indocconsortium.atlassian.net/browse/PILOT-1307
         if project_role == 'contributor':
             # Make sure contributor is restrict to querying there own files/folders
             # the reason use display_path is all own files/folders under user's name folder
@@ -130,9 +149,13 @@ async def search(
         params = MultiDict(request.query_params)
         params['container_type'] = 'project'
         params['container_code'] = project.code
+
+        if 'zone' in params:
+            params['zone'] = get_zone_int(params['zone'])
+
         result = await search_service_client.get_metadata_items(params)
         _logger.info('Successfully fetched data from search service')
-        return replace_zone_labels(result)
+        return _replace_zone_labels_in_search_response(result)
     except Exception as e:
         _logger.error(f'Failed to query data from search service: {e}')
         response.set_code(EAPIResponseCode.internal_error)
@@ -175,7 +198,7 @@ async def statistics(
         params = MultiDict(request.query_params)
         result = await search_service_client.get_project_statistics(project.code, params)
         _logger.info('Successfully fetched data from search service')
-        return result
+        return _replace_zone_labels_in_statistics_response(result)
     except Exception as e:
         _logger.error(f'Failed to query data from search service: {e}')
         response = APIResponse()

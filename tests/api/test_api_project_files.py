@@ -43,7 +43,7 @@ def mock_metadata_item():
 
 
 @pytest.mark.asyncio
-async def test_search_replaces_zone_numbers_with_string_values(
+async def test_search_replaces_zone_numbers_in_response_with_string_values(
     mocker, test_async_client, httpx_mock, mock_project, mock_metadata_item
 ):
     mocker.patch('app.auth.get_current_identity', return_value={'role': 'admin'})
@@ -79,6 +79,32 @@ async def test_search_replaces_zone_numbers_with_string_values(
     assert response.status_code == 200
 
     assert response.json() == expected_response
+
+
+@pytest.mark.asyncio
+async def test_search_replaces_zone_numbers_in_query_params_with_string_values(
+    mocker, test_async_client, httpx_mock, mock_project, mock_metadata_item
+):
+    mocker.patch('app.auth.get_current_identity', return_value={'role': 'admin'})
+    project_code = os.urandom(6).hex()
+    httpx_mock.add_response(
+        method='GET',
+        url=f'{ConfigClass.PROJECT_SERVICE}/v1/projects/{project_code}',
+        json=mock_project(project_code),
+    )
+    httpx_mock.add_response(
+        method='GET',
+        url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}/v1/metadata-items/.*?zone=1.*$'),
+        json={'total_per_zone': {}, 'result': []},
+    )
+
+    headers = {'Authorization': ''}
+    params = {'zone': ConfigClass.CORE_ZONE_LABEL}
+    response = await test_async_client.get(
+        f'/v1/project-files/{project_code}/search', headers=headers, query_string=params
+    )
+
+    assert response.status_code == 200
 
 
 @pytest.mark.asyncio
@@ -119,7 +145,14 @@ async def test_statistics_endpoint_returns_search_service_response(mocker, test_
     mocker.patch('app.auth.get_current_identity', return_value={'role': 'member'})
     project_code = os.urandom(6).hex()
     expected_response = {
-        'files': {'total_count': 1, 'total_size': 1},
+        'files': {
+            'total_count': 1,
+            'total_size': 1,
+            'total_per_zone': {
+                ConfigClass.GREENROOM_ZONE_LABEL: 5,
+                ConfigClass.CORE_ZONE_LABEL: 15,
+            },
+        },
         'activity': {'today_uploaded': 2, 'today_downloaded': 2},
     }
     httpx_mock.add_response(
@@ -130,7 +163,10 @@ async def test_statistics_endpoint_returns_search_service_response(mocker, test_
     httpx_mock.add_response(
         method='GET',
         url=re.compile(rf'^{ConfigClass.SEARCH_SERVICE}/v1/project-files/{project_code}/statistics'),
-        json=expected_response,
+        json={
+            'files': {'total_count': 1, 'total_size': 1, 'total_per_zone': {0: 5, 1: 15}},
+            'activity': {'today_uploaded': 2, 'today_downloaded': 2},
+        },
     )
     headers = {'Authorization': ''}
     response = await test_async_client.get(f'/v1/project-files/{project_code}/statistics', headers=headers)
